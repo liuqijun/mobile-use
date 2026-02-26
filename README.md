@@ -16,6 +16,9 @@ Mobile UI automation from the command line. Inspect, interact with, and automate
 ## Installation
 
 ```bash
+# macOS (Homebrew)
+brew install liuqijun/tap/mobile-use
+
 # From crates.io
 cargo install mobile-use
 
