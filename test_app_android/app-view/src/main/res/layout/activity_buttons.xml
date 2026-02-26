@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Status Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/lastActionText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Last Action: None"
+                    android:textSize="18sp"
+                    android:contentDescription="Last Action: None" />
+
+                <TextView
+                    android:id="@+id/tapCountText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap Count: 0"
+                    android:textSize="18sp"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="Tap Count: 0" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tap Me Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tapMeButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tap Me"
+            android:contentDescription="Tap Me Button"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Double Tap Area -->
+        <FrameLayout
+            android:id="@+id/doubleTapArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/blue_100"
+            android:padding="24dp"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="Double Tap Area">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Double Tap Area" />
+        </FrameLayout>
+
+        <!-- Long Press Area -->
+        <FrameLayout
+            android:id="@+id/longPressArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/green_100"
+            android:padding="24dp"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="Long Press Area">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Long Press Area" />
+        </FrameLayout>
+
+        <!-- Enabled/Disabled Button Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/toggleableButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Enabled Button"
+                android:contentDescription="Enabled Button" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/enableSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:layout_marginStart="16dp"
+                android:contentDescription="Toggle Button Enable" />
+        </LinearLayout>
+
+        <!-- Reset Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/resetButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset Counter"
+            android:contentDescription="Reset Counter"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    </LinearLayout>
+</ScrollView>

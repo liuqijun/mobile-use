@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mobile Use Test (View)</string>
+    <string name="test_pages">Test Pages</string>
+    <string name="buttons_taps">Buttons &amp; Taps</string>
+    <string name="text_inputs">Text Inputs</string>
+    <string name="scrollable_lists">Scrollable Lists</string>
+    <string name="form_controls">Form Controls</string>
+</resources>
