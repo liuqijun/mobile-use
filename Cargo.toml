@@ -2,7 +2,7 @@
 name = "mobile-use"
 version = "0.2.0"
 edition = "2021"
-description = "Mobile UI automation CLI for AI agents - like browser-use, but for mobile apps"
+description = "Mobile UI automation CLI — inspect, interact with, and automate mobile app interfaces"
 license = "MIT"
 repository = "https://github.com/liuqijun/mobile-use"
 homepage = "https://github.com/liuqijun/mobile-use"

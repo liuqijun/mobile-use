@@ -1,119 +1,119 @@
 # Mobile Use Test App
 
-Flutter测试应用，用于验收 mobile-use CLI 的所有命令。
+Flutter test application for verifying all mobile-use CLI commands.
 
-## 运行测试应用
+## Running the Test App
 
 ```bash
 cd test_app
 flutter run
 ```
 
-## 测试页面
+## Test Pages
 
-### 1. 首页 (Home)
-- 4个导航按钮，测试页面跳转
+### 1. Home
+- 4 navigation buttons for page navigation
 
-### 2. Buttons & Taps 页面
-测试命令：`tap`, `double-tap`, `long-press`, `is enabled`
-- "Tap Me" 按钮 - 测试单击
-- "Double Tap Area" - 测试双击
-- "Long Press Area" - 测试长按
-- "Enabled/Disabled Button" - 测试 `is enabled`
+### 2. Buttons & Taps Page
+Tests: `tap`, `double-tap`, `long-press`, `is enabled`
+- "Tap Me" button - test single tap
+- "Double Tap Area" - test double tap
+- "Long Press Area" - test long press
+- "Enabled/Disabled Button" - test `is enabled`
 
-### 3. Text Inputs 页面
-测试命令：`input`, `clear`, `get text`
-- Username 输入框
-- Password 输入框
-- Email 输入框
-- Search 输入框（带清除按钮）
-- Submit/Clear All 按钮
+### 3. Text Inputs Page
+Tests: `text`, `clear`, `get text`
+- Username input field
+- Password input field
+- Email input field
+- Search input field (with clear button)
+- Submit/Clear All buttons
 
-### 4. Scrollable Lists 页面
-测试命令：`scroll`, `swipe`, `wait`
-- 50个列表项
-- 测试上下滚动
+### 4. Scrollable Lists Page
+Tests: `scroll`, `swipe`, `wait`
+- 50 list items
+- Test vertical scrolling
 
-### 5. Form Controls 页面
-测试命令：`tap`, `is checked`, `get`
-- Checkboxes (3个，包括禁用的)
-- Switches (2个)
+### 5. Form Controls Page
+Tests: `tap`, `is checked`, `get`
+- Checkboxes (3, including a disabled one)
+- Switches (2)
 - Slider
-- Radio Buttons (3个选项)
+- Radio Buttons (3 options)
 
-## 验收测试脚本
+## Acceptance Test Script
 
 ```bash
-# 1. 连接到应用
-mobile-use devices                    # 列出设备
-mobile-use connect                    # 连接到应用
+# 1. Connect to the app
+mobile-use devices                    # List devices
+mobile-use connect                    # Connect to the app
 
-# 2. 测试首页
-mobile-use elements -i                # 获取交互元素
-mobile-use capture home.png           # 截图
+# 2. Test home page
+mobile-use elements -i                # Get interactive elements
+mobile-use screenshot home.png        # Take screenshot
 
-# 3. 导航到 Buttons 页面
-mobile-use tap @e1                    # 点击 "Buttons & Taps" 按钮
+# 3. Navigate to Buttons page
+mobile-use tap @e1                    # Tap "Buttons & Taps" button
 mobile-use elements -i
-mobile-use tap @e2                    # 点击 "Tap Me"
-mobile-use long-press @e3             # 长按 "Long Press Area"
-mobile-use capture buttons.png
+mobile-use tap @e2                    # Tap "Tap Me"
+mobile-use long-press @e3             # Long press "Long Press Area"
+mobile-use screenshot buttons.png
 
-# 4. 返回并进入 Inputs 页面
-mobile-use tap @back                  # 返回
-mobile-use tap @e2                    # 点击 "Text Inputs"
+# 4. Go back and enter Inputs page
+mobile-use tap @back                  # Go back
+mobile-use tap @e2                    # Tap "Text Inputs"
 mobile-use elements -i
-mobile-use input @e1 "testuser"       # 输入用户名
-mobile-use input @e2 "password123"    # 输入密码
-mobile-use input @e3 "test@example.com"
-mobile-use get text @e1               # 获取文本
-mobile-use clear @e1                  # 清除输入
-mobile-use capture inputs.png
+mobile-use text @e1 "testuser"        # Input username
+mobile-use text @e2 "password123"     # Input password
+mobile-use text @e3 "test@example.com"
+mobile-use get text @e1               # Get text
+mobile-use clear @e1                  # Clear input
+mobile-use screenshot inputs.png
 
-# 5. 测试 Lists 页面
+# 5. Test Lists page
 mobile-use tap @back
-mobile-use tap @e3                    # 进入 Lists 页面
-mobile-use scroll down 500            # 向下滚动
-mobile-use scroll up 300              # 向上滚动
-mobile-use capture lists.png
+mobile-use tap @e3                    # Enter Lists page
+mobile-use scroll down 500            # Scroll down
+mobile-use scroll up 300              # Scroll up
+mobile-use screenshot lists.png
 
-# 6. 测试 Forms 页面
+# 6. Test Forms page
 mobile-use tap @back
-mobile-use tap @e4                    # 进入 Forms 页面
+mobile-use tap @e4                    # Enter Forms page
 mobile-use elements -i
-mobile-use is checked @checkbox1      # 检查checkbox状态
-mobile-use tap @checkbox1             # 点击checkbox
-mobile-use is checked @checkbox1      # 再次检查
-mobile-use capture forms.png
+mobile-use is checked @checkbox1      # Check checkbox state
+mobile-use tap @checkbox1             # Tap checkbox
+mobile-use is checked @checkbox1      # Check again
+mobile-use screenshot forms.png
 
-# 7. Flutter 命令
-mobile-use flutter:hot-reload         # 热重载
-mobile-use flutter:widgets            # 获取widget树
+# 7. Flutter commands
+mobile-use flutter reload             # Hot reload
+mobile-use flutter widgets            # Get widget tree
 
-# 8. 断开连接
+# 8. Disconnect
 mobile-use disconnect
 ```
 
-## 测试覆盖的命令
+## Command Coverage
 
-| 命令 | 测试页面 | 测试元素 |
-|------|---------|---------|
-| devices | - | 列出连接的设备 |
-| connect | - | 连接到Flutter应用 |
-| disconnect | - | 断开连接 |
-| info | - | 显示连接信息 |
-| elements | 所有页面 | 获取元素树 |
-| capture | 所有页面 | 截图 |
-| tap | Buttons, Forms | 按钮、复选框 |
+| Command | Test Page | Test Target |
+|---------|-----------|-------------|
+| devices | — | List connected devices |
+| connect | — | Connect to Flutter app |
+| disconnect | — | Disconnect |
+| info | — | Show connection info |
+| elements | All pages | Get element tree |
+| screenshot | All pages | Take screenshot |
+| tap | Buttons, Forms | Buttons, checkboxes |
 | double-tap | Buttons | Double Tap Area |
 | long-press | Buttons | Long Press Area |
-| input | Inputs | 文本输入框 |
-| clear | Inputs | 清除输入 |
-| scroll | Lists | 列表滚动 |
-| swipe | Lists | 滑动手势 |
-| get | Inputs, Forms | 获取属性 |
-| is | Buttons, Forms | 检查状态 |
-| wait | Lists | 等待元素 |
-| flutter:hot-reload | - | 热重载 |
-| flutter:hot-restart | - | 热重启 |
-| flutter:widgets | - | Widget树 |
+| text | Inputs | Text input fields |
+| clear | Inputs | Clear input |
+| scroll | Lists | List scrolling |
+| swipe | Lists | Swipe gesture |
+| get | Inputs, Forms | Get properties |
+| is | Buttons, Forms | Check state |
+| wait | Lists | Wait for element |
+| flutter reload | — | Hot reload |
+| flutter restart | — | Hot restart |
+| flutter widgets | — | Widget tree |

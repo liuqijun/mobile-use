@@ -1,16 +1,21 @@
 # mobile-use
 
-Mobile UI automation CLI for AI agents — like [browser-use](https://github.com/browser-use/browser-use), but for mobile apps.
+Mobile UI automation from the command line. Inspect, interact with, and automate mobile app interfaces.
 
-`mobile-use` enables AI agents to understand and interact with mobile application UIs through a simple command-line interface. It supports Flutter apps (via VM Service) and native Android apps (via ADB/uiautomator).
+## Supported Platforms
+
+| Mode | Target | Requirements | Build Type |
+|------|--------|-------------|------------|
+| **Flutter** (recommended) | Flutter apps | Flutter SDK, ADB | Debug / Profile |
+| **Android** | Any Android app | ADB | Any (debug, release) |
+
+- **Flutter mode** connects to the Flutter VM Service via WebSocket, providing a rich semantics tree with element types, labels, bounds, and style information. The VM Service is only available in debug and profile builds — release builds are not supported.
+- **Android mode** uses ADB + uiautomator, works with any Android app regardless of build type.
+- **Host OS**: macOS, Linux (requires ADB in PATH)
 
 ## Installation
 
 ```bash
-# macOS (Homebrew)
-brew tap liuqijun/tap
-brew install mobile-use
-
 # From crates.io
 cargo install mobile-use
 
@@ -53,10 +58,6 @@ CLI Command → Unix Socket → Daemon Process → WebSocket → Flutter VM Serv
 - **CLI**: Stateless command-line interface. Each command sends a request and prints the response.
 - **Daemon**: Background process (`~/.cache/mobile-use/daemon.sock`) that maintains persistent WebSocket connections and session state. Auto-starts on first command.
 - **Session Manager**: Manages multiple simultaneous app connections, each identified by a session name.
-
-**Two operation modes:**
-- **Flutter mode** (recommended): Connects to Flutter VM Service via WebSocket. Provides rich semantics tree with element types, labels, bounds, and style information.
-- **Android mode**: Uses ADB + uiautomator for native Android apps. Falls back to XML dump for element tree.
 
 ---
 
@@ -141,7 +142,6 @@ Runs and auto-connects to a mobile application.
 ```bash
 mobile-use run                        # Run in current Flutter project
 mobile-use run -- -d emulator-5554    # Specify device
-mobile-use run -- --release           # Release mode
 mobile-use run -- --flavor prod       # Specify flavor
 mobile-use run -- --dart-define=ENV=staging
 ```
@@ -510,7 +510,7 @@ Uses ADB screencap. Saves as PNG.
 
 ### Flutter Commands
 
-Requires a Flutter app connection via VM Service.
+Requires a Flutter app connection via VM Service (debug/profile builds only).
 
 #### `flutter reload` — Hot Reload
 
@@ -726,11 +726,6 @@ Each `flutter run` generates a new VM Service token. If the app restarts, you mu
 | `flutter widgets` | Stable | |
 | `daemon start/stop/status` | Stable | |
 | `stop` | Stable | Alias for `daemon stop` |
-
-## Documentation
-
-- [Command Reference (中文)](docs/command-reference.md) — Full command documentation in Chinese
-- [Flutter Integration Guide](docs/flutter-mobile-use-guide.md) — Flutter app setup and best practices
 
 ## License
 
