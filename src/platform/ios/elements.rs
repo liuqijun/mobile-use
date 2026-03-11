@@ -1,6 +1,5 @@
 use crate::core::types::{Bounds, ElementNode, ElementRef, RefMap};
 use std::collections::HashMap;
-use tracing::debug;
 
 /// Fetch and parse the iOS accessibility element tree via WDA
 pub fn fetch_element_tree(
