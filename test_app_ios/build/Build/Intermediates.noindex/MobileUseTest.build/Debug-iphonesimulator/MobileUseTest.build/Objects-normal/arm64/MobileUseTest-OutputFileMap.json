@@ -1,0 +1,89 @@
+{
+  "" : {
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTest-primary.dia",
+    "emit-module-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTest-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTest-primary-emit-module.dia",
+    "pch" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTest-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTest-primary.swiftdeps"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/ContentView.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/MobileUseTestApp.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/MobileUseTestApp~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/Views/ButtonsPage.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ButtonsPage~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/Views/FormsPage.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/FormsPage~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/Views/HomePage.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/HomePage~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/Views/InputsPage.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/InputsPage~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/Views/ListsPage.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/ListsPage~partial.swiftmodule"
+  },
+  "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/build/Build/Intermediates.noindex/MobileUseTest.build/Debug-iphonesimulator/MobileUseTest.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

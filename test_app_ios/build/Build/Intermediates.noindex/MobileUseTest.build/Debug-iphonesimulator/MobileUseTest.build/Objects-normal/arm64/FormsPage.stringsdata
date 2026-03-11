@@ -1,0 +1,232 @@
+{
+  "source": "/Users/liuqijun/SCM/ai-workspace/mobile-use/test_app_ios/MobileUseTest/Views/FormsPage.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Form Controls",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "Checkboxes",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 16
+        }
+      },
+      {
+        "comment": "",
+        "key": "Switches",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 55
+        }
+      },
+      {
+        "comment": "",
+        "key": "Slider",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "Value: %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 89
+        }
+      },
+      {
+        "comment": "",
+        "key": "Radio Buttons",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 96
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option 1",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 28
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option 2",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option 3 (Disabled)",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 49
+        }
+      },
+      {
+        "comment": "",
+        "key": "Toggle 1",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 66
+        }
+      },
+      {
+        "comment": "",
+        "key": "Toggle 2",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 75
+        }
+      },
+      {
+        "comment": "",
+        "key": "Volume Slider",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "Slider Value: %lld",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 91
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choice A",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 102
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choice B",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 104
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choice C",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current State: %@",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option 1",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 23
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unchecked by default",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option 2",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Checked by default",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option 3 (Disabled)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 43
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cannot be changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "Toggle 1",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "Off by default",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "Toggle 2",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "On by default",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current State:",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 114
+        }
+      }
+    ]
+  },
+  "version": 1
+}

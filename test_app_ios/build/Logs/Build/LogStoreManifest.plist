@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>D73AB577-75D7-4F3E-8DE4-67F1A1A13554</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>D73AB577-75D7-4F3E-8DE4-67F1A1A13554.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>MobileUseTest project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>MobileUseTest</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project MobileUseTest with scheme MobileUseTest</string>
+			<key>timeStartedRecording</key>
+			<real>794741420.38946998</real>
+			<key>timeStoppedRecording</key>
+			<real>794741437.70124698</real>
+			<key>title</key>
+			<string>Building project MobileUseTest with scheme MobileUseTest</string>
+			<key>uniqueIdentifier</key>
+			<string>D73AB577-75D7-4F3E-8DE4-67F1A1A13554</string>
+		</dict>
+	</dict>
+</dict>
+</plist>
