@@ -22,6 +22,7 @@ impl WdaClient {
     pub fn new(base_url: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
+            .no_proxy()
             .build()?;
 
         let mut wda = Self {
@@ -48,6 +49,7 @@ impl WdaClient {
     }
 
     /// Get the base URL
+    #[allow(dead_code)]
     pub fn base_url(&self) -> &str {
         &self.base_url
     }

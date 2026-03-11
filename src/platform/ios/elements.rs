@@ -11,6 +11,7 @@ pub fn fetch_element_tree(
 ) -> Result<ElementNode, Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
+        .no_proxy()
         .build()?;
 
     let url = format!("{}/session/{}/source?format=json", base_url, session_id);
@@ -19,8 +20,9 @@ pub fn fetch_element_tree(
 
     let source = data.get("value").ok_or("No 'value' in /source response")?;
 
+    // Parse with interactive_only=false for root, then apply filter inside
     let tree = parse_wda_element(source, scale, ref_map, interactive_only, 0);
-    tree.ok_or_else(|| "Failed to parse element tree".into())
+    tree.ok_or_else(|| "No elements found on screen".into())
 }
 
 /// Parse a single WDA element node recursively
@@ -76,11 +78,6 @@ fn parse_wda_element(
 
     // Skip non-interactive leaf nodes if filtering
     if interactive_only && !is_interactive && children.is_empty() {
-        return None;
-    }
-
-    // Skip containers with no label and no interactive children
-    if interactive_only && !is_interactive && label.is_none() && children.is_empty() {
         return None;
     }
 
@@ -167,6 +164,7 @@ fn map_element_type(raw: &str) -> String {
         "Link" => "Link",
         "CheckBox" => "Checkbox",
         "RadioButton" => "RadioButton",
+        "Icon" => "Button",
         "Window" | "Application" => "Container",
         "Other" => "Container",
         other => other,

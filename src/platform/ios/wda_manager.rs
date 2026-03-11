@@ -20,6 +20,28 @@ fn cmd_not_found_hint(tool: &str, err: std::io::Error) -> Box<dyn std::error::Er
     }
 }
 
+/// Replace Facebook bundle IDs in WDA project to avoid signing conflicts
+/// with personal development teams that can't register com.facebook.* identifiers
+fn patch_bundle_ids(wda_dir: &std::path::Path, team_id: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let pbxproj = wda_dir.join("WebDriverAgent.xcodeproj").join("project.pbxproj");
+    if !pbxproj.exists() {
+        return Err("project.pbxproj not found in WDA directory".into());
+    }
+
+    let content = std::fs::read_to_string(&pbxproj)?;
+    let prefix = format!("com.mobileuse.{}", team_id.to_lowercase());
+    let patched = content.replace("com.facebook", &prefix);
+
+    if patched != content {
+        std::fs::write(&pbxproj, &patched)?;
+        info!("Patched WDA bundle IDs: com.facebook -> {}", prefix);
+    } else {
+        debug!("WDA bundle IDs already patched");
+    }
+
+    Ok(())
+}
+
 /// Get the WDA project directory (cloned repo)
 pub fn wda_project_dir() -> PathBuf {
     dirs::cache_dir()
@@ -51,7 +73,7 @@ pub fn ensure_wda_repo() -> Result<PathBuf, Box<dyn std::error::Error>> {
             .args([
                 "clone",
                 "https://github.com/appium/WebDriverAgent.git",
-                wda_dir.to_str().unwrap(),
+                &wda_dir.to_string_lossy(),
             ])
             .status()
             .map_err(|e| cmd_not_found_hint("git", e))?;
@@ -69,6 +91,9 @@ pub fn build_and_install_wda(
     team_id: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let wda_dir = ensure_wda_repo()?;
+
+    // Replace Facebook bundle IDs with unique ones to avoid signing conflicts
+    patch_bundle_ids(&wda_dir, team_id)?;
 
     info!("Building WebDriverAgent for device {}...", device_id);
     info!("Using development team: {}", team_id);
@@ -104,11 +129,17 @@ pub fn build_and_install_wda(
 
 /// Launch WDA on device using xcodebuild test
 /// Returns the WDA port (default 8100)
-pub fn launch_wda(device_id: &str, team_id: &str) -> Result<u16, Box<dyn std::error::Error>> {
+pub fn launch_wda(device_id: &str, team_id: &str, port: u16) -> Result<u16, Box<dyn std::error::Error>> {
     let wda_dir = wda_project_dir();
 
     if !wda_dir.join("build").exists() {
         return Err("WDA not built. Run 'mobile-use setup-ios' first.".into());
+    }
+
+    // Check if WDA is already running
+    if is_wda_running(port) {
+        info!("WDA is already running on port {}", port);
+        return Ok(port);
     }
 
     info!("Launching WDA on device {}...", device_id);
@@ -142,15 +173,13 @@ pub fn launch_wda(device_id: &str, team_id: &str) -> Result<u16, Box<dyn std::er
         .join("wda.pid");
     std::fs::write(&pid_path, child.id().to_string())?;
 
-    let wda_port = 8100u16;
-
     // Start iproxy for port forwarding
-    start_iproxy(device_id, wda_port)?;
+    start_iproxy(device_id, port)?;
 
     // Wait for WDA to be ready
-    wait_for_wda(wda_port)?;
+    wait_for_wda(port)?;
 
-    Ok(wda_port)
+    Ok(port)
 }
 
 /// Start iproxy for port forwarding
@@ -179,16 +208,30 @@ fn start_iproxy(device_id: &str, port: u16) -> Result<(), Box<dyn std::error::Er
     Ok(())
 }
 
+/// Check if WDA is already running on given port
+fn is_wda_running(port: u16) -> bool {
+    let url = format!("http://127.0.0.1:{}/status", port);
+    reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(2))
+        .no_proxy()
+        .build()
+        .ok()
+        .and_then(|c| c.get(&url).send().ok())
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
+}
+
 /// Wait for WDA to respond on given port
 fn wait_for_wda(port: u16) -> Result<(), Box<dyn std::error::Error>> {
-    let url = format!("http://localhost:{}/status", port);
+    let url = format!("http://127.0.0.1:{}/status", port);
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
+        .no_proxy()
         .build()?;
 
     info!("Waiting for WDA to be ready on port {}...", port);
 
-    for i in 0..30 {
+    for i in 0..60 {
         match client.get(&url).send() {
             Ok(resp) if resp.status().is_success() => {
                 info!("WDA is ready (attempt {})", i + 1);
@@ -201,7 +244,7 @@ fn wait_for_wda(port: u16) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    Err("WDA did not start within 60 seconds".into())
+    Err("WDA did not start within 120 seconds".into())
 }
 
 /// Kill running WDA and iproxy processes

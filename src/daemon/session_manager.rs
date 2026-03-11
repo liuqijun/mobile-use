@@ -55,6 +55,7 @@ impl DaemonSession {
     }
 
     /// Create a new iOS daemon session
+    #[allow(dead_code)]
     pub fn new_ios(name: &str, device: Option<String>, device_op: Box<dyn DeviceOperator>) -> Self {
         info!("Creating iOS session: {} (device: {:?})", name, device);
         Self {
@@ -73,9 +74,9 @@ impl DaemonSession {
         }
     }
 
-    /// Check if the session is connected to a VM Service
+    /// Check if the session is connected
     pub fn is_connected(&self) -> bool {
-        self.vm_url.is_some() || self.package.is_some()
+        self.vm_url.is_some() || self.package.is_some() || self.wda_port.is_some()
     }
 
     /// Check if this is a native Android session (ADB-only, no VM Service)

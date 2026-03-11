@@ -246,6 +246,7 @@ impl std::fmt::Display for Platform {
 }
 
 /// Trait abstracting device operations across platforms (Android/iOS)
+#[allow(dead_code)]
 pub trait DeviceOperator: Send + Sync {
     /// Tap at physical pixel coordinates
     fn tap(&self, x: i32, y: i32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;

@@ -449,43 +449,46 @@ async fn handle_request(
             match sessions_guard.get_mut(&session) {
                 Some(sess) => {
                     use crate::daemon::DeviceAction;
-                    let result = match action {
-                        DeviceAction::Tap { x, y } => sess.device_op.tap(x, y),
-                        DeviceAction::DoubleTap { x, y } => sess.device_op.double_tap(x, y),
-                        DeviceAction::LongPress {
-                            x,
-                            y,
-                            duration_ms,
-                        } => sess.device_op.long_press(x, y, duration_ms),
-                        DeviceAction::Swipe {
-                            x1,
-                            y1,
-                            x2,
-                            y2,
-                            duration_ms,
-                        } => sess.device_op.swipe(x1, y1, x2, y2, duration_ms),
-                        DeviceAction::InputText { ref text } => {
-                            sess.device_op.input_text(text)
-                        }
-                        DeviceAction::Keyevent { ref key } => {
-                            sess.device_op.keyevent(key)
-                        }
-                        DeviceAction::Screenshot { ref path } => {
-                            sess.device_op.screenshot(path)
-                        }
-                        DeviceAction::GetScreenSize => {
-                            match sess.device_op.get_screen_size() {
-                                Ok((w, h)) => {
-                                    return DaemonResponse::ok(
-                                        Some(json!({"width": w, "height": h})),
-                                    )
+                    // Use block_in_place for blocking HTTP calls (iOS WDA uses reqwest::blocking)
+                    let result = tokio::task::block_in_place(|| {
+                        match action {
+                            DeviceAction::Tap { x, y } => sess.device_op.tap(x, y),
+                            DeviceAction::DoubleTap { x, y } => sess.device_op.double_tap(x, y),
+                            DeviceAction::LongPress {
+                                x,
+                                y,
+                                duration_ms,
+                            } => sess.device_op.long_press(x, y, duration_ms),
+                            DeviceAction::Swipe {
+                                x1,
+                                y1,
+                                x2,
+                                y2,
+                                duration_ms,
+                            } => sess.device_op.swipe(x1, y1, x2, y2, duration_ms),
+                            DeviceAction::InputText { ref text } => {
+                                sess.device_op.input_text(text)
+                            }
+                            DeviceAction::Keyevent { ref key } => {
+                                sess.device_op.keyevent(key)
+                            }
+                            DeviceAction::Screenshot { ref path } => {
+                                sess.device_op.screenshot(path)
+                            }
+                            DeviceAction::GetScreenSize => {
+                                match sess.device_op.get_screen_size() {
+                                    Ok((w, h)) => {
+                                        return Ok(Some(json!({"width": w, "height": h})))
+                                    }
+                                    Err(e) => return Err(e),
                                 }
-                                Err(e) => return DaemonResponse::error(e.to_string()),
                             }
                         }
-                    };
+                        .map(|()| None)
+                    });
                     match result {
-                        Ok(()) => DaemonResponse::ok(None),
+                        Ok(Some(data)) => DaemonResponse::ok(Some(data)),
+                        Ok(None) => DaemonResponse::ok(None),
                         Err(e) => DaemonResponse::error(e.to_string()),
                     }
                 }

@@ -133,7 +133,10 @@ async fn reset_all(output: &OutputFormatter) {
         .args(["-xf", "flutter run --machine"])
         .status();
 
-    // 3. Stop daemon gracefully (if reachable)
+    // 3. Stop WDA and iproxy processes (iOS)
+    platform::ios::stop_wda();
+
+    // 4. Stop daemon gracefully (if reachable)
     if DaemonClient::is_daemon_running() {
         if let Ok(mut client) = DaemonClient::connect().await {
             let _ = client.request(DaemonRequest::Shutdown).await;
@@ -484,7 +487,7 @@ async fn main() -> Result<()> {
             }
         }
 
-        Commands::ConnectIos { team_id, port: _ } => {
+        Commands::ConnectIos { team_id, port } => {
             let device_id = match device.clone() {
                 Some(d) => d,
                 None => match detect_ios_device(&output) {
@@ -495,7 +498,11 @@ async fn main() -> Result<()> {
 
             output.info(&format!("Launching WDA on device {}...", device_id));
 
-            let wda_port = match platform::ios::launch_wda(&device_id, &team_id) {
+            let did = device_id.clone();
+            let tid = team_id.clone();
+            let wda_port = match tokio::task::spawn_blocking(move || {
+                platform::ios::launch_wda(&did, &tid, port).map_err(|e| e.to_string())
+            }).await.unwrap() {
                 Ok(p) => p,
                 Err(e) => {
                     output.error(&format!("Failed to launch WDA: {}", e));
@@ -642,16 +649,17 @@ async fn main() -> Result<()> {
                     .and_then(|v| v.as_f64())
                     .unwrap_or(3.0);
 
-                let base_url = format!("http://localhost:{}", wda_port);
-                let mut ref_map = RefMap::new();
-                let tree = match platform::ios::fetch_element_tree(
-                    &base_url,
-                    wda_session_id,
-                    scale,
-                    &mut ref_map,
-                    interactive,
-                ) {
-                    Ok(t) => t,
+                let base_url = format!("http://127.0.0.1:{}", wda_port);
+                let sid = wda_session_id.to_string();
+                let result = tokio::task::spawn_blocking(move || {
+                    let mut rm = RefMap::new();
+                    let tree = platform::ios::fetch_element_tree(
+                        &base_url, &sid, scale, &mut rm, interactive,
+                    );
+                    tree.map(|t| (t, rm)).map_err(|e| e.to_string())
+                }).await.unwrap();
+                let (tree, ref_map) = match result {
+                    Ok(v) => v,
                     Err(e) => {
                         output.error(&format!("Failed to get iOS elements: {}", e));
                         return Err(anyhow::anyhow!("iOS elements failed: {}", e));
