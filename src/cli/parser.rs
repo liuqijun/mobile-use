@@ -541,18 +541,56 @@ Example output:
     Info,
 
     /// List connected devices
-    #[command(long_about = "List all ADB-connected devices.
+    #[command(long_about = "List all connected devices (Android + iOS).
 
 Shows devices available for automation.
-Equivalent to 'adb devices'.
-
-Output format:
-  emulator-5554         device
-  192.168.1.100:5555    device
+Android: via ADB (equivalent to 'adb devices')
+iOS: via libimobiledevice (requires idevice_id)
 
 Use device ID with -d flag:
-  mobile-use -d emulator-5554 run")]
+  mobile-use -d emulator-5554 run
+  mobile-use -d UDID setup-ios --team-id TEAM_ID")]
     Devices,
+
+    /// Setup iOS automation (build & install WebDriverAgent)
+    #[command(name = "setup-ios", long_about = "Build and install WebDriverAgent on an iOS device.
+
+Downloads the WebDriverAgent project and builds it with your Apple Developer certificate.
+Run this once per device before using iOS automation.
+
+Requires:
+- Xcode installed
+- Apple Developer account (free or paid)
+- Device connected via USB
+- libimobiledevice (brew install libimobiledevice)
+
+Example:
+  mobile-use setup-ios --team-id YOUR_TEAM_ID
+  mobile-use -d DEVICE_UDID setup-ios --team-id YOUR_TEAM_ID")]
+    SetupIos {
+        /// Apple Developer Team ID (10-character alphanumeric)
+        #[arg(long, help = "Apple Developer Team ID")]
+        team_id: String,
+    },
+
+    /// Connect to iOS device via WebDriverAgent
+    #[command(name = "connect-ios", long_about = "Connect to an iOS device for UI automation.
+
+Launches WebDriverAgent on the device and establishes connection.
+Run 'setup-ios' first to install WDA on the device.
+
+Example:
+  mobile-use connect-ios --team-id YOUR_TEAM_ID
+  mobile-use -d DEVICE_UDID connect-ios --team-id YOUR_TEAM_ID --port 8100")]
+    ConnectIos {
+        /// Apple Developer Team ID
+        #[arg(long, help = "Apple Developer Team ID")]
+        team_id: String,
+
+        /// WDA port (default: 8100)
+        #[arg(long, default_value = "8100", help = "WDA port")]
+        port: u16,
+    },
 
     /// Daemon management
     #[command(subcommand)]

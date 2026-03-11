@@ -261,6 +261,59 @@ async fn main() -> Result<()> {
                 output.error(&e.to_string());
                 std::process::exit(1);
             }
+            // Also list iOS devices
+            let ios_devices = platform::ios::list_ios_devices();
+            if !ios_devices.is_empty() {
+                output.raw(&format!("\niOS Devices ({}):", ios_devices.len()));
+                for device in &ios_devices {
+                    output.raw(&format!("  {}", device.id));
+                    output.raw(&format!("      Name:    {}", device.name));
+                    output.raw(&format!("      iOS:     {}", device.ios_version));
+                    output.raw("");
+                }
+            }
+            return Ok(());
+        }
+
+        // Setup iOS - build and install WDA (doesn't need daemon)
+        Commands::SetupIos { team_id } => {
+            let device_id = args.device.unwrap_or_else(|| {
+                match std::process::Command::new("idevice_id")
+                    .arg("-l")
+                    .output()
+                {
+                    Ok(out) => {
+                        let stdout = String::from_utf8_lossy(&out.stdout);
+                        stdout.lines().next().unwrap_or("").trim().to_string()
+                    }
+                    Err(_) => String::new(),
+                }
+            });
+
+            if device_id.is_empty() {
+                output.error(
+                    "No iOS device found. Connect a device via USB and try again.",
+                );
+                std::process::exit(1);
+            }
+
+            output.info(&format!("Setting up WDA for device: {}", device_id));
+
+            if let Err(e) = platform::ios::ensure_wda_repo() {
+                output.error(&format!("Failed to get WDA: {}", e));
+                std::process::exit(1);
+            }
+
+            match platform::ios::build_and_install_wda(&device_id, &team_id) {
+                Ok(()) => {
+                    output.success("WebDriverAgent installed successfully!");
+                    output.info("Now run: mobile-use connect-ios --team-id YOUR_TEAM_ID");
+                }
+                Err(e) => {
+                    output.error(&format!("Setup failed: {}", e));
+                    std::process::exit(1);
+                }
+            }
             return Ok(());
         }
 
@@ -417,6 +470,58 @@ async fn main() -> Result<()> {
             }
         }
 
+        Commands::ConnectIos { team_id, port: _ } => {
+            let device_id = device.clone().unwrap_or_else(|| {
+                match std::process::Command::new("idevice_id")
+                    .arg("-l")
+                    .output()
+                {
+                    Ok(out) => {
+                        let stdout = String::from_utf8_lossy(&out.stdout);
+                        stdout.lines().next().unwrap_or("").trim().to_string()
+                    }
+                    Err(_) => String::new(),
+                }
+            });
+
+            if device_id.is_empty() {
+                output.error("No iOS device found.");
+                std::process::exit(1);
+            }
+
+            output.info(&format!("Launching WDA on device {}...", device_id));
+
+            let wda_port = match platform::ios::launch_wda(&device_id, &team_id) {
+                Ok(p) => p,
+                Err(e) => {
+                    output.error(&format!("Failed to launch WDA: {}", e));
+                    output.info("Run 'mobile-use setup-ios --team-id YOUR_TEAM_ID' first.");
+                    std::process::exit(1);
+                }
+            };
+
+            // Send ConnectIos request to daemon (daemon creates the WdaClient)
+            let request = DaemonRequest::ConnectIos {
+                session: session_name.clone(),
+                device: Some(device_id.clone()),
+                wda_port,
+            };
+            match client.request(request).await {
+                Ok(DaemonResponse::Ok { .. }) => {
+                    output.success(&format!("Connected to iOS device: {}", device_id));
+                }
+                Ok(DaemonResponse::Error { message }) => {
+                    output.error(&message);
+                    std::process::exit(1);
+                }
+                _ => {
+                    output.error("Unexpected response");
+                    std::process::exit(1);
+                }
+            }
+            Ok(())
+        }
+
         Commands::Disconnect => {
             let request = DaemonRequest::Disconnect {
                 session: session_name,
@@ -480,7 +585,11 @@ async fn main() -> Result<()> {
         }
 
         // Daemon commands already handled above
-        Commands::Daemon(_) | Commands::Stop | Commands::Devices | Commands::Quit { .. } => {
+        Commands::Daemon(_)
+        | Commands::Stop
+        | Commands::Devices
+        | Commands::Quit { .. }
+        | Commands::SetupIos { .. } => {
             unreachable!("Already handled above")
         }
 
