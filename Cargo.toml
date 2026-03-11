@@ -1,6 +1,6 @@
 [package]
 name = "mobile-use"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "Mobile UI automation CLI — inspect, interact with, and automate mobile app interfaces"
 license = "MIT"
