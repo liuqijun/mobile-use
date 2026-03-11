@@ -2,6 +2,24 @@ use std::path::PathBuf;
 use std::process::Command;
 use tracing::{debug, info};
 
+/// Helper to wrap command errors with install hints
+fn cmd_not_found_hint(tool: &str, err: std::io::Error) -> Box<dyn std::error::Error> {
+    if err.kind() == std::io::ErrorKind::NotFound {
+        match tool {
+            "git" => "git not found. Install it with: xcode-select --install".into(),
+            "xcodebuild" => {
+                "xcodebuild not found. Install Xcode from the App Store, then run: xcode-select --install".into()
+            }
+            "iproxy" => {
+                "iproxy not found. Install it with: brew install libimobiledevice".into()
+            }
+            _ => format!("{} not found", tool).into(),
+        }
+    } else {
+        format!("Failed to run {}: {}", tool, err).into()
+    }
+}
+
 /// Get the WDA project directory (cloned repo)
 pub fn wda_project_dir() -> PathBuf {
     dirs::cache_dir()
@@ -19,7 +37,8 @@ pub fn ensure_wda_repo() -> Result<PathBuf, Box<dyn std::error::Error>> {
         let status = Command::new("git")
             .args(["pull", "--ff-only"])
             .current_dir(&wda_dir)
-            .status()?;
+            .status()
+            .map_err(|e| cmd_not_found_hint("git", e))?;
         if !status.success() {
             info!("Git pull failed, continuing with existing version");
         }
@@ -34,7 +53,8 @@ pub fn ensure_wda_repo() -> Result<PathBuf, Box<dyn std::error::Error>> {
                 "https://github.com/appium/WebDriverAgent.git",
                 wda_dir.to_str().unwrap(),
             ])
-            .status()?;
+            .status()
+            .map_err(|e| cmd_not_found_hint("git", e))?;
         if !status.success() {
             return Err("Failed to clone WebDriverAgent".into());
         }
@@ -69,7 +89,8 @@ pub fn build_and_install_wda(
             "CODE_SIGNING_ALLOWED=YES",
         ])
         .current_dir(&wda_dir)
-        .status()?;
+        .status()
+        .map_err(|e| cmd_not_found_hint("xcodebuild", e))?;
 
     if !status.success() {
         return Err(
@@ -109,7 +130,8 @@ pub fn launch_wda(device_id: &str, team_id: &str) -> Result<u16, Box<dyn std::er
         .current_dir(&wda_dir)
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .spawn()?;
+        .spawn()
+        .map_err(|e| cmd_not_found_hint("xcodebuild", e))?;
 
     debug!("WDA xcodebuild test process started (PID: {})", child.id());
 
@@ -142,7 +164,8 @@ fn start_iproxy(device_id: &str, port: u16) -> Result<(), Box<dyn std::error::Er
         .args([&port.to_string(), &port.to_string(), "-u", device_id])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .spawn()?;
+        .spawn()
+        .map_err(|e| cmd_not_found_hint("iproxy", e))?;
 
     // Save PID for cleanup
     let pid_path = dirs::cache_dir()

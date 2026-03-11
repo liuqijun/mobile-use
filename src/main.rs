@@ -76,6 +76,32 @@ fn get_run_pid_path(session: &str) -> PathBuf {
         .join(format!("run-{}.pid", session))
 }
 
+/// Auto-detect iOS device ID, with clear error messages for missing tools
+fn detect_ios_device(output: &OutputFormatter) -> Option<String> {
+    match std::process::Command::new("idevice_id").arg("-l").output() {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let udid = stdout.lines().next().unwrap_or("").trim().to_string();
+            if udid.is_empty() {
+                output.error("No iOS device found. Connect a device via USB and try again.");
+                None
+            } else {
+                Some(udid)
+            }
+        }
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                output.error(
+                    "idevice_id not found. Install it with: brew install libimobiledevice",
+                );
+            } else {
+                output.error(&format!("Failed to run idevice_id: {}", e));
+            }
+            None
+        }
+    }
+}
+
 /// Perform a full state reset: kill all processes, remove all state files
 async fn reset_all(output: &OutputFormatter) {
     let cache_dir = dirs::cache_dir()
@@ -277,25 +303,13 @@ async fn main() -> Result<()> {
 
         // Setup iOS - build and install WDA (doesn't need daemon)
         Commands::SetupIos { team_id } => {
-            let device_id = args.device.unwrap_or_else(|| {
-                match std::process::Command::new("idevice_id")
-                    .arg("-l")
-                    .output()
-                {
-                    Ok(out) => {
-                        let stdout = String::from_utf8_lossy(&out.stdout);
-                        stdout.lines().next().unwrap_or("").trim().to_string()
-                    }
-                    Err(_) => String::new(),
-                }
-            });
-
-            if device_id.is_empty() {
-                output.error(
-                    "No iOS device found. Connect a device via USB and try again.",
-                );
-                std::process::exit(1);
-            }
+            let device_id = match args.device {
+                Some(d) => d,
+                None => match detect_ios_device(&output) {
+                    Some(d) => d,
+                    None => std::process::exit(1),
+                },
+            };
 
             output.info(&format!("Setting up WDA for device: {}", device_id));
 
@@ -471,23 +485,13 @@ async fn main() -> Result<()> {
         }
 
         Commands::ConnectIos { team_id, port: _ } => {
-            let device_id = device.clone().unwrap_or_else(|| {
-                match std::process::Command::new("idevice_id")
-                    .arg("-l")
-                    .output()
-                {
-                    Ok(out) => {
-                        let stdout = String::from_utf8_lossy(&out.stdout);
-                        stdout.lines().next().unwrap_or("").trim().to_string()
-                    }
-                    Err(_) => String::new(),
-                }
-            });
-
-            if device_id.is_empty() {
-                output.error("No iOS device found.");
-                std::process::exit(1);
-            }
+            let device_id = match device.clone() {
+                Some(d) => d,
+                None => match detect_ios_device(&output) {
+                    Some(d) => d,
+                    None => std::process::exit(1),
+                },
+            };
 
             output.info(&format!("Launching WDA on device {}...", device_id));
 

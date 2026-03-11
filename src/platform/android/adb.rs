@@ -43,9 +43,16 @@ impl AdbClient {
 
         debug!("Executing: adb {:?}", args);
 
-        let output = cmd
-            .output()
-            .map_err(|e| MobileUseError::AdbError(format!("Failed to execute adb: {}", e)))?;
+        let output = cmd.output().map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                MobileUseError::AdbError(
+                    "adb not found. Install it with: brew install android-platform-tools"
+                        .to_string(),
+                )
+            } else {
+                MobileUseError::AdbError(format!("Failed to execute adb: {}", e))
+            }
+        })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -63,7 +70,16 @@ impl AdbClient {
         let output = Command::new("adb")
             .arg("devices")
             .output()
-            .map_err(|e| MobileUseError::AdbError(format!("Failed to list devices: {}", e)))?;
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    MobileUseError::AdbError(
+                        "adb not found. Install it with: brew install android-platform-tools"
+                            .to_string(),
+                    )
+                } else {
+                    MobileUseError::AdbError(format!("Failed to list devices: {}", e))
+                }
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
