@@ -607,6 +607,65 @@ async fn main() -> Result<()> {
                 _ => false,
             };
 
+            // Check for iOS mode
+            let is_ios = match &session_info {
+                Ok(DaemonResponse::Ok { data: Some(data) }) => {
+                    data.get("mode").and_then(|v| v.as_str()) == Some("ios")
+                }
+                _ => false,
+            };
+
+            if is_ios {
+                // iOS mode: fetch element tree via WDA
+                let wda_info = match &session_info {
+                    Ok(DaemonResponse::Ok { data: Some(data) }) => data.clone(),
+                    _ => {
+                        output.error("No iOS session info");
+                        return Err(anyhow::anyhow!("No iOS session info"));
+                    }
+                };
+
+                let wda_port = wda_info
+                    .get("wda_port")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(8100) as u16;
+                let wda_session_id = wda_info
+                    .get("wda_session_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let scale = wda_info
+                    .get("scale")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(3.0);
+
+                let base_url = format!("http://localhost:{}", wda_port);
+                let mut ref_map = RefMap::new();
+                let tree = match platform::ios::fetch_element_tree(
+                    &base_url,
+                    wda_session_id,
+                    scale,
+                    &mut ref_map,
+                    interactive,
+                ) {
+                    Ok(t) => t,
+                    Err(e) => {
+                        output.error(&format!("Failed to get iOS elements: {}", e));
+                        return Err(anyhow::anyhow!("iOS elements failed: {}", e));
+                    }
+                };
+
+                // Store refs
+                let store_request = DaemonRequest::StoreRefs {
+                    session: session_name.clone(),
+                    refs: ref_map.refs.clone(),
+                };
+                let _ = client.request(store_request).await;
+
+                let refs_json = json!(ref_map.refs);
+                output.element_tree(&tree, &refs_json);
+                return Ok(());
+            }
+
             if is_android {
                 // Android mode: use UIAutomator dump
                 let adb = AdbClient::new(device.clone());
