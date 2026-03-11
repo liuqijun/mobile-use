@@ -1,3 +1,4 @@
+use crate::core::types::{DeviceOperator, Platform};
 use crate::core::RefMap;
 use crate::platform::android::AdbClient;
 use crate::platform::flutter::VmServiceClient;
@@ -14,29 +15,61 @@ pub struct DaemonSession {
     pub vm_url: Option<String>,
     /// VM Service client for Flutter communication
     pub vm_service: VmServiceClient,
-    /// ADB client for Android device communication
-    pub adb: AdbClient,
+    /// Device operator for platform-agnostic device interaction
+    pub device_op: Box<dyn DeviceOperator>,
+    /// Device platform
+    pub platform: Platform,
     /// Reference map for element lookup
     pub ref_map: RefMap,
     /// Track if this session has a flutter process (run mode)
     pub has_flutter_process: bool,
     /// Android package name (native Android mode)
     pub package: Option<String>,
+    /// WDA port (iOS mode)
+    pub wda_port: Option<u16>,
+    /// WDA session ID (iOS mode)
+    pub wda_session_id: Option<String>,
+    /// Device scale factor (iOS mode)
+    pub wda_scale: Option<f64>,
 }
 
 impl DaemonSession {
-    /// Create a new daemon session
+    /// Create a new daemon session (defaults to Android)
     pub fn new(name: &str, device: Option<String>) -> Self {
         info!("Creating session: {} (device: {:?})", name, device);
+        let adb = AdbClient::new(device.clone());
         Self {
             name: name.to_string(),
-            device: device.clone(),
+            device,
             vm_url: None,
             vm_service: VmServiceClient::new(),
-            adb: AdbClient::new(device),
+            device_op: Box::new(adb),
+            platform: Platform::Android,
             ref_map: RefMap::new(),
             has_flutter_process: false,
             package: None,
+            wda_port: None,
+            wda_session_id: None,
+            wda_scale: None,
+        }
+    }
+
+    /// Create a new iOS daemon session
+    pub fn new_ios(name: &str, device: Option<String>, device_op: Box<dyn DeviceOperator>) -> Self {
+        info!("Creating iOS session: {} (device: {:?})", name, device);
+        Self {
+            name: name.to_string(),
+            device,
+            vm_url: None,
+            vm_service: VmServiceClient::new(),
+            device_op,
+            platform: Platform::IOS,
+            ref_map: RefMap::new(),
+            has_flutter_process: false,
+            package: None,
+            wda_port: None,
+            wda_session_id: None,
+            wda_scale: None,
         }
     }
 

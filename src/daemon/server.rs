@@ -212,11 +212,11 @@ async fn handle_request(
             } else if let Some(port) = port {
                 WS_URL_TEMPLATE.replace("{}", &port.to_string())
             } else {
-                // Auto-discover - need ADB client from session
+                // Auto-discover - create ADB client for Flutter VM service lookup
                 let adb = {
                     let mut sessions_guard = sessions.lock().await;
                     let daemon_session = sessions_guard.get_or_create(&session, device.clone());
-                    daemon_session.adb.clone()
+                    crate::platform::android::AdbClient::new(daemon_session.device.clone())
                 };
                 // Lock released, now do async work
                 match commands::find_flutter_vm_service(&adb).await {
