@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -28,8 +29,11 @@ fun ButtonsPage(navController: NavController) {
     var lastAction by remember { mutableStateOf("None") }
     var tapCount by remember { mutableIntStateOf(0) }
     var isEnabled by remember { mutableStateOf(true) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Buttons & Taps") },
@@ -81,6 +85,7 @@ fun ButtonsPage(navController: NavController) {
                 onClick = {
                     lastAction = "Single Tap"
                     tapCount++
+                    scope.launch { snackbarHostState.showSnackbar("Single Tap") }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -101,6 +106,7 @@ fun ButtonsPage(navController: NavController) {
                             onDoubleTap = {
                                 lastAction = "Double Tap"
                                 tapCount += 2
+                                scope.launch { snackbarHostState.showSnackbar("Double Tap") }
                             }
                         )
                     }
@@ -123,6 +129,7 @@ fun ButtonsPage(navController: NavController) {
                         onLongClick = {
                             lastAction = "Long Press"
                             tapCount += 5
+                            scope.launch { snackbarHostState.showSnackbar("Long Press") }
                         }
                     )
                     .semantics { contentDescription = "Long Press Area" },
@@ -139,7 +146,10 @@ fun ButtonsPage(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ElevatedButton(
-                    onClick = { lastAction = "Enabled Button Tapped" },
+                    onClick = {
+                        lastAction = "Enabled Button Tapped"
+                        scope.launch { snackbarHostState.showSnackbar("Enabled Button Tapped") }
+                    },
                     enabled = isEnabled,
                     modifier = Modifier
                         .weight(1f)
@@ -166,6 +176,7 @@ fun ButtonsPage(navController: NavController) {
                 onClick = {
                     lastAction = "Reset"
                     tapCount = 0
+                    scope.launch { snackbarHostState.showSnackbar("Reset") }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
