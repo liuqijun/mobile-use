@@ -289,21 +289,35 @@ async fn handle_request(
 
         DaemonRequest::Info { session } => {
             with_session!(sessions, &session, |sess| {
-                let mode = if sess.is_android_mode() {
+                let mode = if sess.platform == crate::core::types::Platform::IOS {
+                    "ios"
+                } else if sess.is_android_mode() {
                     "android"
                 } else if sess.vm_url.is_some() {
                     "flutter"
                 } else {
                     "disconnected"
                 };
-                DaemonResponse::ok(Some(json!({
+                let mut info = json!({
                     "session": sess.name,
                     "device": sess.device,
                     "vm_url": sess.vm_url,
                     "package": sess.package,
+                    "platform": sess.platform.to_string(),
                     "mode": mode,
                     "connected": sess.is_connected()
-                })))
+                });
+                // Add iOS-specific info
+                if let Some(port) = sess.wda_port {
+                    info["wda_port"] = json!(port);
+                }
+                if let Some(ref sid) = sess.wda_session_id {
+                    info["wda_session_id"] = json!(sid);
+                }
+                if let Some(scale) = sess.wda_scale {
+                    info["scale"] = json!(scale);
+                }
+                DaemonResponse::ok(Some(info))
             })
         }
 
@@ -388,6 +402,97 @@ async fn handle_request(
                 "mode": "android",
                 "connected": true
             })))
+        }
+
+        DaemonRequest::ConnectIos {
+            session,
+            device,
+            wda_port,
+        } => {
+            let wda_url = format!("http://localhost:{}", wda_port);
+            // Use spawn_blocking since WdaClient::new makes blocking HTTP calls
+            let wda_result = tokio::task::spawn_blocking(move || {
+                crate::platform::ios::WdaClient::new(&wda_url)
+            })
+            .await;
+
+            match wda_result {
+                Ok(Ok(wda_client)) => {
+                    let mut sessions_guard = sessions.lock().await;
+                    let daemon_session =
+                        sessions_guard.get_or_create(&session, device.clone());
+                    // Extract metadata before boxing (type erasure loses concrete type)
+                    daemon_session.wda_port = Some(wda_port);
+                    daemon_session.wda_session_id =
+                        wda_client.session_id().map(|s| s.to_string());
+                    daemon_session.wda_scale = Some(wda_client.scale());
+                    daemon_session.device_op = Box::new(wda_client);
+                    daemon_session.platform = crate::core::types::Platform::IOS;
+                    DaemonResponse::ok(Some(json!({
+                        "session": session,
+                        "mode": "ios",
+                        "wda_port": wda_port,
+                        "connected": true
+                    })))
+                }
+                Ok(Err(e)) => {
+                    DaemonResponse::error(format!("Failed to connect to WDA: {}", e))
+                }
+                Err(e) => {
+                    DaemonResponse::error(format!("WDA connection task failed: {}", e))
+                }
+            }
+        }
+
+        DaemonRequest::ExecuteAction { session, action } => {
+            let mut sessions_guard = sessions.lock().await;
+            match sessions_guard.get_mut(&session) {
+                Some(sess) => {
+                    use crate::daemon::DeviceAction;
+                    let result = match action {
+                        DeviceAction::Tap { x, y } => sess.device_op.tap(x, y),
+                        DeviceAction::DoubleTap { x, y } => sess.device_op.double_tap(x, y),
+                        DeviceAction::LongPress {
+                            x,
+                            y,
+                            duration_ms,
+                        } => sess.device_op.long_press(x, y, duration_ms),
+                        DeviceAction::Swipe {
+                            x1,
+                            y1,
+                            x2,
+                            y2,
+                            duration_ms,
+                        } => sess.device_op.swipe(x1, y1, x2, y2, duration_ms),
+                        DeviceAction::InputText { ref text } => {
+                            sess.device_op.input_text(text)
+                        }
+                        DeviceAction::Keyevent { ref key } => {
+                            sess.device_op.keyevent(key)
+                        }
+                        DeviceAction::Screenshot { ref path } => {
+                            sess.device_op.screenshot(path)
+                        }
+                        DeviceAction::GetScreenSize => {
+                            match sess.device_op.get_screen_size() {
+                                Ok((w, h)) => {
+                                    return DaemonResponse::ok(
+                                        Some(json!({"width": w, "height": h})),
+                                    )
+                                }
+                                Err(e) => return DaemonResponse::error(e.to_string()),
+                            }
+                        }
+                    };
+                    match result {
+                        Ok(()) => DaemonResponse::ok(None),
+                        Err(e) => DaemonResponse::error(e.to_string()),
+                    }
+                }
+                None => {
+                    DaemonResponse::error(format!("Session not found: {}", session))
+                }
+            }
         }
 
         DaemonRequest::HasFlutterProcess { session } => {
