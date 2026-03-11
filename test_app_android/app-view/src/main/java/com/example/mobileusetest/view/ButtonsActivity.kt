@@ -1,6 +1,7 @@
 package com.example.mobileusetest.view
 
 import android.os.Bundle
+import android.widget.Toast
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.widget.FrameLayout
@@ -35,6 +36,7 @@ class ButtonsActivity : AppCompatActivity() {
             lastAction = "Single Tap"
             tapCount++
             updateStatus()
+            Toast.makeText(this, "Single Tap", Toast.LENGTH_SHORT).show()
         }
 
         // Double Tap Area
@@ -44,6 +46,7 @@ class ButtonsActivity : AppCompatActivity() {
                 lastAction = "Double Tap"
                 tapCount += 2
                 updateStatus()
+                Toast.makeText(this@ButtonsActivity, "Double Tap", Toast.LENGTH_SHORT).show()
                 return true
             }
         })
@@ -57,6 +60,7 @@ class ButtonsActivity : AppCompatActivity() {
             lastAction = "Long Press"
             tapCount += 5
             updateStatus()
+            Toast.makeText(this, "Long Press", Toast.LENGTH_SHORT).show()
             true
         }
 
@@ -72,6 +76,7 @@ class ButtonsActivity : AppCompatActivity() {
         toggleableButton.setOnClickListener {
             lastAction = "Enabled Button Tapped"
             updateStatus()
+            Toast.makeText(this, "Enabled Button Tapped", Toast.LENGTH_SHORT).show()
         }
 
         // Reset Button
@@ -79,6 +84,7 @@ class ButtonsActivity : AppCompatActivity() {
             lastAction = "Reset"
             tapCount = 0
             updateStatus()
+            Toast.makeText(this, "Reset", Toast.LENGTH_SHORT).show()
         }
     }
 

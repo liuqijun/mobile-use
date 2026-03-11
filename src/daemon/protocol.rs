@@ -52,10 +52,35 @@ pub enum DaemonRequest {
         device: Option<String>,
         package: String,
     },
+    /// Connect to iOS device via WDA
+    ConnectIos {
+        session: String,
+        device: Option<String>,
+        wda_port: u16,
+    },
+    /// Execute device action (tap, swipe, etc.) via session's DeviceOperator
+    ExecuteAction {
+        session: String,
+        action: DeviceAction,
+    },
     /// Health check
     Ping,
     /// Stop daemon
     Shutdown,
+}
+
+/// Device action to execute via DeviceOperator
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub enum DeviceAction {
+    Tap { x: i32, y: i32 },
+    DoubleTap { x: i32, y: i32 },
+    LongPress { x: i32, y: i32, duration_ms: u32 },
+    Swipe { x1: i32, y1: i32, x2: i32, y2: i32, duration_ms: u32 },
+    InputText { text: String },
+    Keyevent { key: String },
+    Screenshot { path: String },
+    GetScreenSize,
 }
 
 /// Response from daemon to CLI

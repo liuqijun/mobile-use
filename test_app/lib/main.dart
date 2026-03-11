@@ -126,6 +126,15 @@ class _ButtonsPageState extends State<ButtonsPage> {
   int _tapCount = 0;
   bool _isEnabled = true;
 
+  void _showToast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,6 +184,7 @@ class _ButtonsPageState extends State<ButtonsPage> {
                     _lastAction = 'Single Tap';
                     _tapCount++;
                   });
+                  _showToast(_lastAction);
                 },
                 child: const Text('Tap Me'),
               ),
@@ -190,6 +200,7 @@ class _ButtonsPageState extends State<ButtonsPage> {
                     _lastAction = 'Double Tap';
                     _tapCount += 2;
                   });
+                  _showToast(_lastAction);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -214,6 +225,7 @@ class _ButtonsPageState extends State<ButtonsPage> {
                     _lastAction = 'Long Press';
                     _tapCount += 5;
                   });
+                  _showToast(_lastAction);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -242,6 +254,7 @@ class _ButtonsPageState extends State<ButtonsPage> {
                               setState(() {
                                 _lastAction = 'Enabled Button Tapped';
                               });
+                              _showToast(_lastAction);
                             }
                           : null,
                       child: Text(_isEnabled ? 'Enabled Button' : 'Disabled Button'),
@@ -274,6 +287,7 @@ class _ButtonsPageState extends State<ButtonsPage> {
                     _lastAction = 'Reset';
                     _tapCount = 0;
                   });
+                  _showToast(_lastAction);
                 },
                 child: const Text('Reset Counter'),
               ),

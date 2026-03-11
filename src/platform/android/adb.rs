@@ -43,9 +43,16 @@ impl AdbClient {
 
         debug!("Executing: adb {:?}", args);
 
-        let output = cmd
-            .output()
-            .map_err(|e| MobileUseError::AdbError(format!("Failed to execute adb: {}", e)))?;
+        let output = cmd.output().map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                MobileUseError::AdbError(
+                    "adb not found. Install it with: brew install android-platform-tools"
+                        .to_string(),
+                )
+            } else {
+                MobileUseError::AdbError(format!("Failed to execute adb: {}", e))
+            }
+        })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -63,7 +70,16 @@ impl AdbClient {
         let output = Command::new("adb")
             .arg("devices")
             .output()
-            .map_err(|e| MobileUseError::AdbError(format!("Failed to list devices: {}", e)))?;
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    MobileUseError::AdbError(
+                        "adb not found. Install it with: brew install android-platform-tools"
+                            .to_string(),
+                    )
+                } else {
+                    MobileUseError::AdbError(format!("Failed to list devices: {}", e))
+                }
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -309,6 +325,49 @@ impl AdbClient {
             .map_err(|_| MobileUseError::AdbError("Invalid height".to_string()))?;
 
         Ok((width, height))
+    }
+}
+
+use crate::core::types::{DeviceOperator, Platform};
+
+impl DeviceOperator for AdbClient {
+    fn tap(&self, x: i32, y: i32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::tap(self, x, y).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn double_tap(&self, x: i32, y: i32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::tap(self, x, y).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        AdbClient::tap(self, x, y).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        Ok(())
+    }
+
+    fn long_press(&self, x: i32, y: i32, duration_ms: u32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::long_press(self, x, y, duration_ms).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn swipe(&self, x1: i32, y1: i32, x2: i32, y2: i32, duration_ms: u32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::swipe(self, x1, y1, x2, y2, duration_ms).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn input_text(&self, text: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::input_text(self, text).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn keyevent(&self, key: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::keyevent(self, key).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn screenshot(&self, local_path: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::screenshot(self, local_path).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn get_screen_size(&self) -> std::result::Result<(i32, i32), Box<dyn std::error::Error + Send + Sync>> {
+        AdbClient::get_screen_size(self).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn platform(&self) -> Platform {
+        Platform::Android
     }
 }
 

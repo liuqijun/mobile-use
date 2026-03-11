@@ -227,3 +227,43 @@ pub struct ActionResult {
     pub message: Option<String>,
     pub data: Option<serde_json::Value>,
 }
+
+/// Device platform
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Platform {
+    Android,
+    IOS,
+}
+
+impl std::fmt::Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Platform::Android => write!(f, "android"),
+            Platform::IOS => write!(f, "ios"),
+        }
+    }
+}
+
+/// Trait abstracting device operations across platforms (Android/iOS)
+#[allow(dead_code)]
+pub trait DeviceOperator: Send + Sync {
+    /// Tap at physical pixel coordinates
+    fn tap(&self, x: i32, y: i32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Double tap at physical pixel coordinates
+    fn double_tap(&self, x: i32, y: i32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Long press at physical pixel coordinates for given duration
+    fn long_press(&self, x: i32, y: i32, duration_ms: u32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Swipe from (x1,y1) to (x2,y2) over duration
+    fn swipe(&self, x1: i32, y1: i32, x2: i32, y2: i32, duration_ms: u32) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Input text string
+    fn input_text(&self, text: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Send key event
+    fn keyevent(&self, key: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Take screenshot and save to local path
+    fn screenshot(&self, local_path: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Get screen size in physical pixels (width, height)
+    fn get_screen_size(&self) -> std::result::Result<(i32, i32), Box<dyn std::error::Error + Send + Sync>>;
+    /// Get device platform
+    fn platform(&self) -> Platform;
+}

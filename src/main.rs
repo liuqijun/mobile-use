@@ -9,6 +9,7 @@ use cli::{Commands, DaemonCommands, FlutterCommands, OutputFormatter};
 use core::{ActionResult, Direction, ElementRef, RefMap};
 use daemon::{
     get_pid_path, get_socket_path, DaemonClient, DaemonRequest, DaemonResponse, DaemonServer,
+    DeviceAction,
 };
 use platform::android::AdbClient;
 use platform::android::gradle;
@@ -75,6 +76,32 @@ fn get_run_pid_path(session: &str) -> PathBuf {
         .join(format!("run-{}.pid", session))
 }
 
+/// Auto-detect iOS device ID, with clear error messages for missing tools
+fn detect_ios_device(output: &OutputFormatter) -> Option<String> {
+    match std::process::Command::new("idevice_id").arg("-l").output() {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let udid = stdout.lines().next().unwrap_or("").trim().to_string();
+            if udid.is_empty() {
+                output.error("No iOS device found. Connect a device via USB and try again.");
+                None
+            } else {
+                Some(udid)
+            }
+        }
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                output.error(
+                    "idevice_id not found. Install it with: brew install libimobiledevice",
+                );
+            } else {
+                output.error(&format!("Failed to run idevice_id: {}", e));
+            }
+            None
+        }
+    }
+}
+
 /// Perform a full state reset: kill all processes, remove all state files
 async fn reset_all(output: &OutputFormatter) {
     let cache_dir = dirs::cache_dir()
@@ -106,7 +133,10 @@ async fn reset_all(output: &OutputFormatter) {
         .args(["-xf", "flutter run --machine"])
         .status();
 
-    // 3. Stop daemon gracefully (if reachable)
+    // 3. Stop WDA and iproxy processes (iOS)
+    platform::ios::stop_wda();
+
+    // 4. Stop daemon gracefully (if reachable)
     if DaemonClient::is_daemon_running() {
         if let Ok(mut client) = DaemonClient::connect().await {
             let _ = client.request(DaemonRequest::Shutdown).await;
@@ -259,6 +289,47 @@ async fn main() -> Result<()> {
             if let Err(e) = commands::devices(&output, args.json) {
                 output.error(&e.to_string());
                 std::process::exit(1);
+            }
+            // Also list iOS devices
+            let ios_devices = platform::ios::list_ios_devices();
+            if !ios_devices.is_empty() {
+                output.raw(&format!("\niOS Devices ({}):", ios_devices.len()));
+                for device in &ios_devices {
+                    output.raw(&format!("  {}", device.id));
+                    output.raw(&format!("      Name:    {}", device.name));
+                    output.raw(&format!("      iOS:     {}", device.ios_version));
+                    output.raw("");
+                }
+            }
+            return Ok(());
+        }
+
+        // Setup iOS - build and install WDA (doesn't need daemon)
+        Commands::SetupIos { team_id } => {
+            let device_id = match args.device {
+                Some(d) => d,
+                None => match detect_ios_device(&output) {
+                    Some(d) => d,
+                    None => std::process::exit(1),
+                },
+            };
+
+            output.info(&format!("Setting up WDA for device: {}", device_id));
+
+            if let Err(e) = platform::ios::ensure_wda_repo() {
+                output.error(&format!("Failed to get WDA: {}", e));
+                std::process::exit(1);
+            }
+
+            match platform::ios::build_and_install_wda(&device_id, &team_id) {
+                Ok(()) => {
+                    output.success("WebDriverAgent installed successfully!");
+                    output.info("Now run: mobile-use connect-ios --team-id YOUR_TEAM_ID");
+                }
+                Err(e) => {
+                    output.error(&format!("Setup failed: {}", e));
+                    std::process::exit(1);
+                }
             }
             return Ok(());
         }
@@ -416,6 +487,52 @@ async fn main() -> Result<()> {
             }
         }
 
+        Commands::ConnectIos { team_id, port } => {
+            let device_id = match device.clone() {
+                Some(d) => d,
+                None => match detect_ios_device(&output) {
+                    Some(d) => d,
+                    None => std::process::exit(1),
+                },
+            };
+
+            output.info(&format!("Launching WDA on device {}...", device_id));
+
+            let did = device_id.clone();
+            let tid = team_id.clone();
+            let wda_port = match tokio::task::spawn_blocking(move || {
+                platform::ios::launch_wda(&did, &tid, port).map_err(|e| e.to_string())
+            }).await.unwrap() {
+                Ok(p) => p,
+                Err(e) => {
+                    output.error(&format!("Failed to launch WDA: {}", e));
+                    output.info("Run 'mobile-use setup-ios --team-id YOUR_TEAM_ID' first.");
+                    std::process::exit(1);
+                }
+            };
+
+            // Send ConnectIos request to daemon (daemon creates the WdaClient)
+            let request = DaemonRequest::ConnectIos {
+                session: session_name.clone(),
+                device: Some(device_id.clone()),
+                wda_port,
+            };
+            match client.request(request).await {
+                Ok(DaemonResponse::Ok { .. }) => {
+                    output.success(&format!("Connected to iOS device: {}", device_id));
+                }
+                Ok(DaemonResponse::Error { message }) => {
+                    output.error(&message);
+                    std::process::exit(1);
+                }
+                _ => {
+                    output.error("Unexpected response");
+                    std::process::exit(1);
+                }
+            }
+            Ok(())
+        }
+
         Commands::Disconnect => {
             let request = DaemonRequest::Disconnect {
                 session: session_name,
@@ -479,7 +596,11 @@ async fn main() -> Result<()> {
         }
 
         // Daemon commands already handled above
-        Commands::Daemon(_) | Commands::Stop | Commands::Devices | Commands::Quit { .. } => {
+        Commands::Daemon(_)
+        | Commands::Stop
+        | Commands::Devices
+        | Commands::Quit { .. }
+        | Commands::SetupIos { .. } => {
             unreachable!("Already handled above")
         }
 
@@ -497,12 +618,69 @@ async fn main() -> Result<()> {
                 _ => false,
             };
 
+            // Check for iOS mode
+            let is_ios = match &session_info {
+                Ok(DaemonResponse::Ok { data: Some(data) }) => {
+                    data.get("mode").and_then(|v| v.as_str()) == Some("ios")
+                }
+                _ => false,
+            };
+
+            if is_ios {
+                // iOS mode: fetch element tree via WDA
+                let wda_info = match &session_info {
+                    Ok(DaemonResponse::Ok { data: Some(data) }) => data.clone(),
+                    _ => {
+                        output.error("No iOS session info");
+                        return Err(anyhow::anyhow!("No iOS session info"));
+                    }
+                };
+
+                let wda_port = wda_info
+                    .get("wda_port")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(8100) as u16;
+                let wda_session_id = wda_info
+                    .get("wda_session_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let scale = wda_info
+                    .get("scale")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(3.0);
+
+                let base_url = format!("http://127.0.0.1:{}", wda_port);
+                let sid = wda_session_id.to_string();
+                let result = tokio::task::spawn_blocking(move || {
+                    let mut rm = RefMap::new();
+                    let tree = platform::ios::fetch_element_tree(
+                        &base_url, &sid, scale, &mut rm, interactive,
+                    );
+                    tree.map(|t| (t, rm)).map_err(|e| e.to_string())
+                }).await.unwrap();
+                let (tree, ref_map) = match result {
+                    Ok(v) => v,
+                    Err(e) => {
+                        output.error(&format!("Failed to get iOS elements: {}", e));
+                        return Err(anyhow::anyhow!("iOS elements failed: {}", e));
+                    }
+                };
+
+                // Store refs
+                let store_request = DaemonRequest::StoreRefs {
+                    session: session_name.clone(),
+                    refs: ref_map.refs.clone(),
+                };
+                let _ = client.request(store_request).await;
+
+                let refs_json = json!(ref_map.refs);
+                output.element_tree(&tree, &refs_json);
+                return Ok(());
+            }
+
             if is_android {
                 // Android mode: use UIAutomator dump
-                let adb = get_adb_from_session(&mut client, &session_name, device.clone()).await.map_err(|e| {
-                    output.error(&e.to_string());
-                    e
-                })?;
+                let adb = AdbClient::new(device.clone());
 
                 let xml = match uiautomator::dump_ui(&adb) {
                     Ok(xml) => xml,
@@ -1245,55 +1423,49 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-// Helper function to map ADB errors with output formatting
-fn map_adb_err<T, E: std::fmt::Display>(
-    output: &OutputFormatter,
-    result: std::result::Result<T, E>,
-) -> Result<T> {
-    result.map_err(|e| {
-        output.error(&e.to_string());
-        anyhow::anyhow!(e.to_string())
-    })
-}
-
-// Helper function to clear text from a text field
-fn clear_text_field(adb: &AdbClient, output: &OutputFormatter) -> Result<()> {
-    map_adb_err(output, adb.keyevent("KEYCODE_MOVE_END"))?;
-    for _ in 0..MAX_CLEAR_DELETE_PRESSES {
-        map_adb_err(output, adb.keyevent("67"))?;
-    }
-    Ok(())
-}
-
-// Helper function to get ADB client from daemon session info
-async fn get_adb_from_session(
+// Helper function to execute device actions via daemon's DeviceOperator
+async fn execute_device_action(
     client: &mut DaemonClient,
     session: &str,
-    device_override: Option<String>,
-) -> Result<AdbClient> {
-    // If CLI device is provided, use it directly
-    if device_override.is_some() {
-        return Ok(AdbClient::new(device_override));
-    }
-
-    // Otherwise, try to get device from session
-    let info_req = DaemonRequest::Info {
+    action: DeviceAction,
+) -> Result<Option<serde_json::Value>> {
+    let request = DaemonRequest::ExecuteAction {
         session: session.to_string(),
+        action,
     };
-    match client.request(info_req).await? {
-        DaemonResponse::Ok { data: Some(info) } => {
-            let device = info
-                .get("device")
-                .and_then(|v| v.as_str())
-                .map(|s| s.to_string());
-            Ok(AdbClient::new(device))
-        }
-        DaemonResponse::Ok { data: None } => Err(anyhow::anyhow!("No session info available")),
+    match client.request(request).await? {
+        DaemonResponse::Ok { data } => Ok(data),
         DaemonResponse::Error { message } => Err(anyhow::anyhow!(message)),
-        DaemonResponse::HasFlutterProcess { .. } => {
-            Err(anyhow::anyhow!("Unexpected HasFlutterProcess response"))
-        }
+        _ => Err(anyhow::anyhow!("Unexpected response")),
     }
+}
+
+// Helper function to clear text from a text field via daemon
+async fn clear_text_field_via_daemon(
+    client: &mut DaemonClient,
+    session: &str,
+) -> Result<()> {
+    // Move to end
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Keyevent {
+            key: "MOVE_END".to_string(),
+        },
+    )
+    .await?;
+    // Delete backwards
+    for _ in 0..MAX_CLEAR_DELETE_PRESSES {
+        execute_device_action(
+            client,
+            session,
+            DeviceAction::Keyevent {
+                key: "DEL".to_string(),
+            },
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 // Helper function to resolve element reference to bounds
@@ -1334,13 +1506,20 @@ async fn tap_action(
         e
     })?;
 
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
+    let (x, y) = element.bounds.center();
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Tap {
+            x: x as i32,
+            y: y as i32,
+        },
+    )
+    .await
+    .map_err(|e| {
         output.error(&e.to_string());
         e
     })?;
-
-    let (x, y) = element.bounds.center();
-    map_adb_err(output, adb.tap(x as i32, y as i32))?;
 
     output.action_result(&ActionResult {
         success: true,
@@ -1367,18 +1546,20 @@ async fn double_tap_action(
         e
     })?;
 
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
+    let (x, y) = element.bounds.center();
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::DoubleTap {
+            x: x as i32,
+            y: y as i32,
+        },
+    )
+    .await
+    .map_err(|e| {
         output.error(&e.to_string());
         e
     })?;
-
-    let (x, y) = element.bounds.center();
-    let x = x as i32;
-    let y = y as i32;
-
-    map_adb_err(output, adb.tap(x, y))?;
-    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    map_adb_err(output, adb.tap(x, y))?;
 
     output.action_result(&ActionResult {
         success: true,
@@ -1406,13 +1587,21 @@ async fn long_press_action(
         e
     })?;
 
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
+    let (x, y) = element.bounds.center();
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::LongPress {
+            x: x as i32,
+            y: y as i32,
+            duration_ms: duration,
+        },
+    )
+    .await
+    .map_err(|e| {
         output.error(&e.to_string());
         e
     })?;
-
-    let (x, y) = element.bounds.center();
-    map_adb_err(output, adb.long_press(x as i32, y as i32, duration))?;
 
     output.action_result(&ActionResult {
         success: true,
@@ -1439,18 +1628,28 @@ async fn clear_action(
         e
     })?;
 
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
+    // Tap to focus
+    let (x, y) = element.bounds.center();
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Tap {
+            x: x as i32,
+            y: y as i32,
+        },
+    )
+    .await
+    .map_err(|e| {
         output.error(&e.to_string());
         e
     })?;
-
-    // Tap to focus
-    let (x, y) = element.bounds.center();
-    map_adb_err(output, adb.tap(x as i32, y as i32))?;
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
     // Move to end and delete backwards
-    clear_text_field(&adb, output)?;
+    clear_text_field_via_daemon(client, session).await.map_err(|e| {
+        output.error(&e.to_string());
+        e
+    })?;
 
     output.action_result(&ActionResult {
         success: true,
@@ -1478,24 +1677,45 @@ async fn input_action(
         e
     })?;
 
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
+    // Tap to focus
+    let (x, y) = element.bounds.center();
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Tap {
+            x: x as i32,
+            y: y as i32,
+        },
+    )
+    .await
+    .map_err(|e| {
         output.error(&e.to_string());
         e
     })?;
-
-    // Tap to focus
-    let (x, y) = element.bounds.center();
-    map_adb_err(output, adb.tap(x as i32, y as i32))?;
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
     // Clear if requested
     if clear_first {
-        clear_text_field(&adb, output)?;
+        clear_text_field_via_daemon(client, session).await.map_err(|e| {
+            output.error(&e.to_string());
+            e
+        })?;
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
     }
 
     // Input text
-    map_adb_err(output, adb.input_text(text))?;
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::InputText {
+            text: text.to_string(),
+        },
+    )
+    .await
+    .map_err(|e| {
+        output.error(&e.to_string());
+        e
+    })?;
 
     output.action_result(&ActionResult {
         success: true,
@@ -1514,15 +1734,10 @@ async fn capture_action(
     client: &mut DaemonClient,
     output: &OutputFormatter,
     session: &str,
-    device: Option<String>,
+    _device: Option<String>,
     path: Option<String>,
     _json_mode: bool,
 ) -> Result<()> {
-    let adb = get_adb_from_session(client, session, device).await.map_err(|e| {
-        output.error(&e.to_string());
-        e
-    })?;
-
     // Determine output path
     let output_path = path.unwrap_or_else(|| {
         let timestamp = std::time::SystemTime::now()
@@ -1532,8 +1747,19 @@ async fn capture_action(
         format!("screenshot-{}.png", timestamp)
     });
 
-    // Take screenshot via ADB
-    map_adb_err(output, adb.screenshot(&output_path))?;
+    // Take screenshot via daemon's DeviceOperator
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Screenshot {
+            path: output_path.clone(),
+        },
+    )
+    .await
+    .map_err(|e| {
+        output.error(&e.to_string());
+        e
+    })?;
 
     // Get image dimensions if possible
     let dimensions = if let Ok(img) = image::open(&output_path) {
@@ -1562,18 +1788,26 @@ async fn scroll_action(
     distance: i32,
     _json_mode: bool,
 ) -> Result<()> {
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
-        output.error(&e.to_string());
-        e
-    })?;
-
     let dir: Direction = direction.parse().map_err(|e: String| {
         output.error(&e);
         anyhow::anyhow!(e)
     })?;
 
-    // Get screen center
-    let (width, height) = map_adb_err(output, adb.get_screen_size())?;
+    // Get screen size via daemon
+    let size_data = execute_device_action(client, session, DeviceAction::GetScreenSize)
+        .await
+        .map_err(|e| {
+            output.error(&e.to_string());
+            e
+        })?;
+    let (width, height) = match size_data {
+        Some(data) => {
+            let w = data["width"].as_i64().unwrap_or(1080) as i32;
+            let h = data["height"].as_i64().unwrap_or(1920) as i32;
+            (w, h)
+        }
+        None => (1080, 1920),
+    };
     let cx = width / 2;
     let cy = height / 2;
 
@@ -1584,7 +1818,22 @@ async fn scroll_action(
         Direction::Right => ((cx - distance / 2).max(0), cy, cx + distance / 2, cy),
     };
 
-    map_adb_err(output, adb.swipe(x1, y1, x2, y2, 300))?;
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Swipe {
+            x1,
+            y1,
+            x2,
+            y2,
+            duration_ms: 300,
+        },
+    )
+    .await
+    .map_err(|e| {
+        output.error(&e.to_string());
+        e
+    })?;
 
     output.action_result(&ActionResult {
         success: true,
@@ -1603,11 +1852,6 @@ async fn swipe_action(
     from: Option<String>,
     _json_mode: bool,
 ) -> Result<()> {
-    let adb = get_adb_from_session(client, session, None).await.map_err(|e| {
-        output.error(&e.to_string());
-        e
-    })?;
-
     let dir: Direction = direction.parse().map_err(|e: String| {
         output.error(&e);
         anyhow::anyhow!(e)
@@ -1622,8 +1866,20 @@ async fn swipe_action(
         let (x, y) = element.bounds.center();
         (x as i32, y as i32)
     } else {
-        let (width, height) = map_adb_err(output, adb.get_screen_size())?;
-        (width / 2, height / 2)
+        let size_data = execute_device_action(client, session, DeviceAction::GetScreenSize)
+            .await
+            .map_err(|e| {
+                output.error(&e.to_string());
+                e
+            })?;
+        match size_data {
+            Some(data) => {
+                let w = data["width"].as_i64().unwrap_or(1080) as i32;
+                let h = data["height"].as_i64().unwrap_or(1920) as i32;
+                (w / 2, h / 2)
+            }
+            None => (540, 960),
+        }
     };
 
     let (end_x, end_y) = match dir {
@@ -1633,7 +1889,22 @@ async fn swipe_action(
         Direction::Right => (start_x + DEFAULT_SWIPE_DISTANCE, start_y),
     };
 
-    map_adb_err(output, adb.swipe(start_x, start_y, end_x, end_y, 200))?;
+    execute_device_action(
+        client,
+        session,
+        DeviceAction::Swipe {
+            x1: start_x,
+            y1: start_y,
+            x2: end_x,
+            y2: end_y,
+            duration_ms: 200,
+        },
+    )
+    .await
+    .map_err(|e| {
+        output.error(&e.to_string());
+        e
+    })?;
 
     output.action_result(&ActionResult {
         success: true,
