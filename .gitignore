@@ -21,14 +21,26 @@ test_app/.dart_tool/
 test_app/.packages
 test_app/ios/Pods/
 test_app/ios/.symlinks/
+test_app/ios/Flutter/flutter_export_environment.sh
+test_app/ios/Flutter/Generated.xcconfig
 test_app/android/.gradle/
 test_app/android/local.properties
+
+# Signing & certificates
+*.mobileprovision
+*.p12
+*.cer
+*.pem
+ExportOptions.plist
 
 # Environment
 .env*
 
 # Screenshots (generated during testing)
 screenshot-*.png
+
+# Docs (local only)
+docs/
 
 # Claude Code
 .claude/
