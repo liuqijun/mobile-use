@@ -49,8 +49,15 @@ The daemon (`~/.cache/mobile-use/daemon.sock`) maintains persistent WebSocket co
   - `vm_service.rs` - Flutter VM Service WebSocket JSON-RPC 2.0 client
   - `semantics.rs` - Parse Flutter semantics tree into `ElementNode` tree with style extraction
   - `process_manager.rs` - Spawn and manage `flutter run --machine` process for `run` command
-- **`src/platform/android/adb.rs`** - ADB command wrapper for device interaction (tap, input, screenshot)
-- **`src/core/types.rs`** - Core types: `ElementNode`, `ElementRef`, `Bounds`, `StyleInfo`, `RefMap`
+- **`src/platform/android/`** - Android integration
+  - `adb.rs` - ADB command wrapper for device interaction (tap, input, screenshot)
+  - `uiautomator.rs` - Parse Android uiautomator XML into element tree
+- **`src/platform/ios/`** - iOS integration
+  - `wda.rs` - WebDriverAgent HTTP client implementing `DeviceOperator` trait
+  - `wda_manager.rs` - WDA lifecycle management (build, install, launch, port forwarding)
+  - `elements.rs` - Parse WDA JSON source into element tree
+  - `discovery.rs` - iOS device discovery via `idevice_id`
+- **`src/core/types.rs`** - Core types: `ElementNode`, `ElementRef`, `Bounds`, `StyleInfo`, `RefMap`, `DeviceOperator` trait
 - **`src/cli/`** - CLI argument parsing (`parser.rs`) and output formatting (`output.rs`)
 
 ### Key Types
@@ -123,6 +130,30 @@ mobile-use flutter restart    # Hot restart the app
 mobile-use flutter widgets    # Get widget tree
 ```
 
+## iOS Integration Details
+
+### DeviceOperator Trait
+
+All platform-specific operations (tap, swipe, input, screenshot) are abstracted behind `DeviceOperator` trait in `core/types.rs`. Both `AdbClient` (Android) and `WdaClient` (iOS) implement this trait.
+
+### iOS Setup Flow
+
+```bash
+mobile-use setup-ios --team-id TEAM_ID   # Build & install WDA (one-time per device)
+mobile-use connect-ios --team-id TEAM_ID  # Launch WDA, start iproxy, connect
+```
+
+### WDA Coordinate System
+
+iOS WDA works in logical points. `WdaClient` detects the device scale factor and converts physical pixel coordinates (used by mobile-use) to logical points for WDA actions via `to_points()`.
+
+### iOS Element Properties
+
+WDA returns properties as strings (`"0"`/`"1"` instead of booleans). The iOS element parser in `elements.rs` handles this conversion:
+- `isEnabled` → `enabled` property (stored only when false)
+- `isFocused` → `focused` property (stored only when true)
+- Switch `value` "0"/"1" → `isToggled` property
+
 ## Common Pitfalls
 
 1. **`text` command already taps to focus** - Don't add extra `tap` before `text`. The `input_action` function in `main.rs` already does: tap → wait 100ms → input text.
@@ -133,17 +164,23 @@ mobile-use flutter widgets    # Get widget tree
 
 4. **Element refs are ephemeral** - `@e5` from one `elements` call may refer to different element after UI changes. Always re-fetch before operating.
 
-## Test App
+5. **Scroll direction is content-based** - `scroll down` means show content below (finger swipes up). The implementation inverts the swipe direction relative to the user-specified scroll direction.
 
-`test_app/` contains a Flutter app for manual testing with various UI patterns (buttons, text fields, lists, form controls).
+6. **Platform property naming** - `is enabled/checked/focused` checks multiple property names across platforms (Flutter: `hasEnabledState`+`isEnabled`, Android: `isDisabled`, iOS: `enabled`). See the `is_state` match block in `main.rs`.
+
+## Test Apps
+
+- **`test_app/`** - Flutter app for testing. Covers buttons, text inputs, scrollable lists, form controls.
+- **`test_app_ios/`** - Native SwiftUI app (same UI pages) for iOS-specific testing.
+- **`test_app_android/`** - Native Android apps (Compose + View variants) for Android-specific testing.
 
 ```bash
-cd test_app
-flutter run -d <device_id>
-# Note VM Service URL, convert format, then:
-mobile-use -d <device_id> connect --url "ws://127.0.0.1:<port>/<token>/ws"
+# Flutter test app
+cd test_app && mobile-use run -- -d <device_id>
+
+# Android native
+mobile-use -d <device_id> connect --package com.example.mobileuse.test_app
+
+# iOS native
+mobile-use -d <UDID> connect-ios --team-id <TEAM_ID>
 ```
-
-## Documentation
-
-- `docs/flutter-mobile-use-guide.md` - Complete usage guide with VM Service URL setup, Flutter semantics best practices
