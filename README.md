@@ -8,10 +8,12 @@ Mobile UI automation from the command line. Inspect, interact with, and automate
 |------|--------|-------------|------------|
 | **Flutter** (recommended) | Flutter apps | Flutter SDK, ADB | Debug / Profile |
 | **Android** | Any Android app | ADB | Any (debug, release) |
+| **iOS** | iOS apps | Xcode, libimobiledevice | Any |
 
 - **Flutter mode** connects to the Flutter VM Service via WebSocket, providing a rich semantics tree with element types, labels, bounds, and style information. The VM Service is only available in debug and profile builds — release builds are not supported.
 - **Android mode** uses ADB + uiautomator, works with any Android app regardless of build type.
-- **Host OS**: macOS, Linux (requires ADB in PATH)
+- **iOS mode** uses WebDriverAgent (WDA) for real device automation. Requires one-time setup per device via `setup-ios`. Supports element tree, tap, text input, scroll, swipe, and screenshot.
+- **Host OS**: macOS, Linux (requires ADB in PATH). iOS support requires macOS with Xcode.
 
 ## Installation
 
@@ -50,6 +52,30 @@ mobile-use screenshot output.png
 mobile-use disconnect
 ```
 
+### iOS Quick Start
+
+```bash
+# 1. Install dependencies
+brew install libimobiledevice
+
+# 2. List devices (find your iOS device UDID)
+mobile-use devices
+
+# 3. One-time setup: build & install WebDriverAgent
+mobile-use -d DEVICE_UDID setup-ios --team-id YOUR_TEAM_ID
+
+# 4. Connect to device
+mobile-use -d DEVICE_UDID connect-ios --team-id YOUR_TEAM_ID
+
+# 5. Use the same commands as Android/Flutter
+mobile-use elements
+mobile-use tap @e1
+mobile-use screenshot ios.png
+
+# 6. Disconnect
+mobile-use disconnect
+```
+
 ## Architecture
 
 ```
@@ -80,8 +106,9 @@ Every command accepts these options:
 
 ```bash
 -d emulator-5554           # Android emulator
--d 1234567890ABCDEF        # USB-connected physical device
+-d 1234567890ABCDEF        # USB-connected Android device
 -d 192.168.1.100:5555      # Wireless ADB connection
+-d 00008030-001A2D410EFA002E  # iOS device UDID
 ```
 
 ### Multi-Session Support
@@ -228,9 +255,11 @@ VM Service: ws://127.0.0.1:55370/abc=/ws
 mobile-use devices
 ```
 
+Lists Android devices (via ADB) and iOS devices (via libimobiledevice).
+
 Output:
 ```
-Found 2 device(s):
+Found 3 device(s):
 
   [1] emulator-5554
       Model:   Android SDK built for x86_64 (Google)
@@ -241,6 +270,10 @@ Found 2 device(s):
       Model:   Mi 10 (Xiaomi)
       Android: 13 (SDK 33)
       Screen:  1080x2340
+
+  [3] 00008030-001A2D410EFA002E
+      Name:    iPhone 15 Pro
+      iOS:     17.4
 ```
 
 ---
@@ -541,6 +574,54 @@ Returns the raw Flutter widget render tree. Very verbose — prefer `elements` f
 
 ---
 
+### iOS Setup & Automation
+
+#### `setup-ios` — Setup iOS Automation
+
+Build and install WebDriverAgent on an iOS device. Run once per device before iOS automation.
+
+**Requirements**:
+- macOS with Xcode installed
+- Apple Developer account (free or paid)
+- Device connected via USB
+- libimobiledevice (`brew install libimobiledevice`)
+
+| Parameter | Description |
+|-----------|-------------|
+| `--team-id <ID>` | Apple Developer Team ID (10-character alphanumeric) **[required]** |
+
+```bash
+mobile-use setup-ios --team-id YOUR_TEAM_ID
+mobile-use -d DEVICE_UDID setup-ios --team-id YOUR_TEAM_ID
+```
+
+---
+
+#### `connect-ios` — Connect to iOS Device
+
+Launches WebDriverAgent on the device and establishes connection. Requires `setup-ios` to have been run first.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--team-id <ID>` | Apple Developer Team ID **[required]** | — |
+| `--port <PORT>` | WDA port | 8100 |
+
+```bash
+mobile-use connect-ios --team-id YOUR_TEAM_ID
+mobile-use -d DEVICE_UDID connect-ios --team-id YOUR_TEAM_ID --port 8100
+```
+
+After connecting, use the same commands as Flutter/Android mode:
+
+```bash
+mobile-use elements           # Get iOS element tree
+mobile-use tap @e1            # Tap element
+mobile-use text @e2 "hello"   # Input text
+mobile-use screenshot ios.png # Take screenshot
+```
+
+---
+
 ### Daemon Management
 
 #### `daemon start` / `stop` / `status`
@@ -571,9 +652,10 @@ mobile-use quit --all        # Full reset
 **`quit --all` performs:**
 1. Kill all `mobile-use run` processes (all sessions)
 2. Kill orphaned `flutter run --machine` processes
-3. Stop the daemon
-4. Delete all PID files and socket files
-5. Clear legacy session files
+3. Stop WDA and iproxy processes (iOS)
+4. Stop the daemon
+5. Delete all PID files and socket files
+6. Clear legacy session files
 
 Use `quit --all` when mobile-use is in an inconsistent state (crashed processes, stale PID files).
 
@@ -695,6 +777,21 @@ mobile-use elements --json
 
 Some operations (`scroll`, `swipe`) may fail with `INJECT_EVENTS` permission errors over wireless ADB. Use USB connection for full functionality.
 
+### iOS Issues
+
+```bash
+# Device not detected - install libimobiledevice
+brew install libimobiledevice
+
+# WDA build fails - check Xcode and team ID
+xcode-select -p                    # Ensure Xcode CLI tools are set
+mobile-use setup-ios --team-id YOUR_TEAM_ID  # Re-run setup
+
+# Connection fails after setup
+mobile-use quit --all              # Full reset
+mobile-use -d UDID connect-ios --team-id YOUR_TEAM_ID
+```
+
 ### VM Service URL Changes
 
 Each `flutter run` generates a new VM Service token. If the app restarts, you must reconnect with the new URL. Using `mobile-use run` handles this automatically.
@@ -729,6 +826,8 @@ Each `flutter run` generates a new VM Service token. If the app restarts, you mu
 | `flutter widgets` | Stable | |
 | `daemon start/stop/status` | Stable | |
 | `stop` | Stable | Alias for `daemon stop` |
+| `setup-ios` | Stable | One-time per device |
+| `connect-ios` | Stable | |
 
 ## License
 

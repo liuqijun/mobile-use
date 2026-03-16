@@ -92,12 +92,42 @@ fn parse_wda_element(
     if let Some(ref v) = value {
         properties.insert("value".to_string(), serde_json::Value::String(v.clone()));
     }
+    // WDA returns isEnabled as "0"/"1" string or bool
     let enabled = node
-        .get("enabled")
-        .and_then(|v| v.as_bool())
+        .get("isEnabled")
+        .or_else(|| node.get("enabled"))
+        .map(|v| {
+            v.as_bool()
+                .unwrap_or_else(|| v.as_str().map(|s| s == "1" || s == "true").unwrap_or(true))
+        })
         .unwrap_or(true);
     if !enabled {
         properties.insert("enabled".to_string(), serde_json::Value::Bool(false));
+    }
+
+    // WDA returns isFocused as "0"/"1" string or bool
+    let focused = node
+        .get("isFocused")
+        .map(|v| {
+            v.as_bool()
+                .unwrap_or_else(|| v.as_str().map(|s| s == "1" || s == "true").unwrap_or(false))
+        })
+        .unwrap_or(false);
+    if focused {
+        properties.insert("focused".to_string(), serde_json::Value::Bool(true));
+    }
+
+    // For Switch type: value "1" means checked/toggled on, "0" means off
+    if element_type == "Switch" {
+        let switch_value = node
+            .get("value")
+            .and_then(|v| v.as_str())
+            .unwrap_or("0");
+        let is_toggled = switch_value == "1";
+        properties.insert(
+            "isToggled".to_string(),
+            serde_json::Value::Bool(is_toggled),
+        );
     }
 
     // Create ElementRef for ref_map
@@ -238,7 +268,7 @@ mod tests {
             "type": "XCUIElementTypeButton",
             "label": "Login",
             "rect": {"x": 10.0, "y": 20.0, "width": 100.0, "height": 50.0},
-            "enabled": true,
+            "isEnabled": "1",
             "children": []
         });
 
@@ -247,5 +277,44 @@ mod tests {
         assert_eq!(elem.element_type, "Button");
         assert_eq!(elem.label, Some("Login".to_string()));
         assert_eq!(elem.bounds.as_ref().unwrap().x, 20.0);
+        // enabled=true should NOT be stored (only false is stored)
+        assert!(elem.properties.get("enabled").is_none());
+    }
+
+    #[test]
+    fn test_parse_wda_element_disabled() {
+        let node = serde_json::json!({
+            "type": "XCUIElementTypeButton",
+            "label": "Submit",
+            "rect": {"x": 0.0, "y": 0.0, "width": 100.0, "height": 50.0},
+            "isEnabled": "0",
+            "children": []
+        });
+
+        let mut ref_map = RefMap::new();
+        let elem = parse_wda_element(&node, 1.0, &mut ref_map, false, 0).unwrap();
+        assert_eq!(
+            elem.properties.get("enabled"),
+            Some(&serde_json::Value::Bool(false))
+        );
+    }
+
+    #[test]
+    fn test_parse_wda_element_switch() {
+        let node = serde_json::json!({
+            "type": "XCUIElementTypeSwitch",
+            "label": "Toggle",
+            "value": "1",
+            "rect": {"x": 0.0, "y": 0.0, "width": 50.0, "height": 30.0},
+            "isEnabled": "1",
+            "children": []
+        });
+
+        let mut ref_map = RefMap::new();
+        let elem = parse_wda_element(&node, 1.0, &mut ref_map, false, 0).unwrap();
+        assert_eq!(
+            elem.properties.get("isToggled"),
+            Some(&serde_json::Value::Bool(true))
+        );
     }
 }

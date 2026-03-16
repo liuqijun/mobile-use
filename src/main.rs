@@ -2045,6 +2045,10 @@ async fn is_action(
             else if element.properties.get("hasEnabledState").and_then(|v| v.as_bool()).unwrap_or(false) {
                 element.properties.get("isEnabled").and_then(|v| v.as_bool()).unwrap_or(false)
             }
+            // iOS WDA sets "enabled" directly
+            else if let Some(v) = element.properties.get("enabled").and_then(|v| v.as_bool()) {
+                v
+            }
             // No enable state info → default enabled
             else {
                 true

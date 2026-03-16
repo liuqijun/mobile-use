@@ -475,20 +475,25 @@ Default: 30000 (30 seconds). Returns error if timeout exceeded.")]
 
 PROPERTY TYPES:
   text   - Get element's text content
+  type   - Get element type (button, textfield, etc.)
   prop   - Get all properties as JSON
   bounds - Get element bounds {x, y, width, height}
+  <key>  - Get any custom key from properties map
 
 Example:
   mobile-use get text @e3      # Get text: \"Login\"
+  mobile-use get type @e3      # Get type: \"button\"
   mobile-use get bounds @e3    # Get: {x:100, y:200, width:300, height:50}
   mobile-use get prop @e3      # Get all properties as JSON")]
     Get {
-        /// Property type: text, prop, bounds
+        /// Property type: text, type, prop, bounds, or custom key
         #[arg(help = "Property type",
             long_help = "Which property to retrieve:
 - text: Element's displayed text
+- type: Element type (button, textfield, etc.)
 - prop: All semantic properties (JSON)
-- bounds: Screen coordinates {x, y, width, height}")]
+- bounds: Screen coordinates {x, y, width, height}
+- <key>: Any custom key from the element's properties map")]
         property: String,
 
         /// Element reference
@@ -502,20 +507,26 @@ Example:
 STATE TYPES:
   visible - Check if element is on screen
   enabled - Check if element is interactable
+  checked - Check if element is checked (checkboxes, switches)
+  focused - Check if element has input focus
 
 Returns: true/false
 
 Example:
   mobile-use is visible @e3   # Check if @e3 is visible
   mobile-use is enabled @e3   # Check if @e3 is enabled
+  mobile-use is checked @e5   # Check if @e5 is checked
+  mobile-use is focused @e2   # Check if @e2 has focus
 
 Useful for conditional logic in automation.")]
     Is {
-        /// State to check: visible, enabled
+        /// State to check: visible, enabled, checked, focused
         #[arg(help = "State to check",
             long_help = "Which state to check:
 - visible: Element is displayed on screen
-- enabled: Element can be interacted with")]
+- enabled: Element can be interacted with
+- checked: Element is checked (checkboxes, switches)
+- focused: Element has input focus")]
         state: String,
 
         /// Element reference
@@ -541,15 +552,17 @@ Example output:
     Info,
 
     /// List connected devices
+    /// List connected devices (Android + iOS)
     #[command(long_about = "List all connected devices (Android + iOS).
 
 Shows devices available for automation.
 Android: via ADB (equivalent to 'adb devices')
-iOS: via libimobiledevice (requires idevice_id)
+iOS: via libimobiledevice (requires 'brew install libimobiledevice')
 
 Use device ID with -d flag:
-  mobile-use -d emulator-5554 run
-  mobile-use -d UDID setup-ios --team-id TEAM_ID")]
+  mobile-use -d emulator-5554 run              # Android
+  mobile-use -d UDID setup-ios --team-id ID    # iOS setup
+  mobile-use -d UDID connect-ios --team-id ID  # iOS connect")]
     Devices,
 
     /// Setup iOS automation (build & install WebDriverAgent)
