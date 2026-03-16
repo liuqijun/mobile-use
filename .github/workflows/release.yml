@@ -21,8 +21,6 @@ jobs:
             os: macos-latest
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -39,18 +37,10 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Package (Unix)
-        if: matrix.os != 'windows-latest'
+      - name: Package
         run: |
           cd target/${{ matrix.target }}/release
           tar czf ../../../mobile-use-${{ matrix.target }}.tar.gz mobile-use
-          cd ../../..
-
-      - name: Package (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          cd target/${{ matrix.target }}/release
-          7z a ../../../mobile-use-${{ matrix.target }}.zip mobile-use.exe
           cd ../../..
 
       - name: Upload artifact
