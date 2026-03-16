@@ -6,7 +6,7 @@ mod platform;
 
 use anyhow::Result;
 use cli::{Commands, DaemonCommands, FlutterCommands, OutputFormatter};
-use core::{ActionResult, Direction, ElementRef, RefMap};
+use core::{ActionResult, Direction, ElementNode, ElementRef, RefMap};
 use daemon::{
     get_pid_path, get_socket_path, DaemonClient, DaemonRequest, DaemonResponse, DaemonServer,
     DeviceAction,
@@ -23,9 +23,6 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use serde_json::json;
 use tokio::time::Duration;
 use tracing_subscriber::EnvFilter;
-
-/// Maximum number of characters to delete when clearing a text field
-const MAX_CLEAR_DELETE_PRESSES: u32 = 50;
 
 /// Default swipe distance in pixels
 const DEFAULT_SWIPE_DISTANCE: i32 = 500;
@@ -569,11 +566,25 @@ async fn main() -> Result<()> {
                         } else {
                             let session = data["session"].as_str().unwrap_or("unknown");
                             let connected = data["connected"].as_bool().unwrap_or(false);
-                            let vm_url = data["vm_url"].as_str().unwrap_or("not connected");
-                            output.info(&format!(
-                                "Session: {}\nConnected: {}\nVM URL: {}",
-                                session, connected, vm_url
-                            ));
+                            let mode = data["mode"].as_str().unwrap_or("unknown");
+                            let platform_str = data["platform"].as_str().unwrap_or("unknown");
+                            let device_str = data["device"].as_str();
+                            let vm_url = data["vm_url"].as_str();
+                            let package = data["package"].as_str();
+                            let mut info_str = format!(
+                                "Session: {}\nConnected: {}\nMode: {}\nPlatform: {}",
+                                session, connected, mode, platform_str
+                            );
+                            if let Some(dev) = device_str {
+                                info_str.push_str(&format!("\nDevice: {}", dev));
+                            }
+                            if let Some(pkg) = package {
+                                info_str.push_str(&format!("\nPackage: {}", pkg));
+                            }
+                            if let Some(url) = vm_url {
+                                info_str.push_str(&format!("\nVM URL: {}", url));
+                            }
+                            output.info(&info_str);
                         }
                     } else {
                         output.info("No session info available");
@@ -1006,26 +1017,83 @@ async fn main() -> Result<()> {
                 let poll_interval = Duration::from_millis(500);
                 let timeout_duration = Duration::from_millis(timeout_ms as u64);
 
+                // Detect session mode to choose search strategy
+                let info_request = DaemonRequest::Info {
+                    session: session_name.clone(),
+                };
+                let session_info = client.request(info_request).await;
+                let session_mode = match &session_info {
+                    Ok(DaemonResponse::Ok { data: Some(data) }) => {
+                        data.get("mode").and_then(|v| v.as_str()).unwrap_or("flutter").to_string()
+                    }
+                    _ => "flutter".to_string(),
+                };
+
                 let result = tokio::time::timeout(timeout_duration, async {
                     loop {
-                        // Get current elements
-                        let sem_request = DaemonRequest::CallExtension {
-                            session: session_name.clone(),
-                            method: "ext.flutter.debugDumpSemanticsTreeInTraversalOrder"
-                                .to_string(),
-                            args: None,
-                        };
+                        match session_mode.as_str() {
+                            "android" => {
+                                // Android mode: use uiautomator dump to search text
+                                let adb = AdbClient::new(device.clone());
+                                if let Ok(xml) = uiautomator::dump_ui(&adb) {
+                                    if xml.contains(&text_value) {
+                                        return Ok(());
+                                    }
+                                }
+                            }
+                            "ios" => {
+                                // iOS mode: use elements tree to search text
+                                let wda_info = match &session_info {
+                                    Ok(DaemonResponse::Ok { data: Some(data) }) => Some(data.clone()),
+                                    _ => None,
+                                };
+                                if let Some(info) = &wda_info {
+                                    let wda_port = info.get("wda_port").and_then(|v| v.as_u64()).unwrap_or(8100) as u16;
+                                    let wda_session_id = info.get("wda_session_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                                    let scale = info.get("scale").and_then(|v| v.as_f64()).unwrap_or(3.0);
+                                    let base_url = format!("http://127.0.0.1:{}", wda_port);
+                                    let text_val = text_value.clone();
+                                    let sid = wda_session_id.clone();
+                                    let found = tokio::task::spawn_blocking(move || {
+                                        let mut rm = RefMap::new();
+                                        if let Ok(tree) = platform::ios::fetch_element_tree(&base_url, &sid, scale, &mut rm, false) {
+                                            // Search all element labels for text
+                                            fn search_tree(node: &ElementNode, text: &str) -> bool {
+                                                if let Some(label) = &node.label {
+                                                    if label.contains(text) { return true; }
+                                                }
+                                                node.children.iter().any(|c| search_tree(c, text))
+                                            }
+                                            search_tree(&tree, &text_val)
+                                        } else {
+                                            false
+                                        }
+                                    }).await.unwrap_or(false);
+                                    if found {
+                                        return Ok(());
+                                    }
+                                }
+                            }
+                            _ => {
+                                // Flutter mode: search semantics dump
+                                let sem_request = DaemonRequest::CallExtension {
+                                    session: session_name.clone(),
+                                    method: "ext.flutter.debugDumpSemanticsTreeInTraversalOrder"
+                                        .to_string(),
+                                    args: None,
+                                };
 
-                        if let Ok(DaemonResponse::Ok {
-                            data: Some(sem_data),
-                        }) = client.request(sem_request).await
-                        {
-                            // Check if text appears anywhere in the semantics dump
-                            if let Some(text_content) =
-                                sem_data.get("data").and_then(|v| v.as_str())
-                            {
-                                if text_content.contains(&text_value) {
-                                    return Ok(());
+                                if let Ok(DaemonResponse::Ok {
+                                    data: Some(sem_data),
+                                }) = client.request(sem_request).await
+                                {
+                                    if let Some(text_content) =
+                                        sem_data.get("data").and_then(|v| v.as_str())
+                                    {
+                                        if text_content.contains(&text_value) {
+                                            return Ok(());
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1445,26 +1513,7 @@ async fn clear_text_field_via_daemon(
     client: &mut DaemonClient,
     session: &str,
 ) -> Result<()> {
-    // Move to end
-    execute_device_action(
-        client,
-        session,
-        DeviceAction::Keyevent {
-            key: "MOVE_END".to_string(),
-        },
-    )
-    .await?;
-    // Delete backwards
-    for _ in 0..MAX_CLEAR_DELETE_PRESSES {
-        execute_device_action(
-            client,
-            session,
-            DeviceAction::Keyevent {
-                key: "DEL".to_string(),
-            },
-        )
-        .await?;
-    }
+    execute_device_action(client, session, DeviceAction::ClearTextField).await?;
     Ok(())
 }
 
@@ -1809,13 +1858,16 @@ async fn scroll_action(
         None => (1080, 1920),
     };
     let cx = width / 2;
-    let cy = height / 2;
+    // Use lower 60% of screen to avoid AppBar/status bar
+    let cy = height * 3 / 5;
 
+    // "scroll down" = show content below = finger swipes UP (bottom to top)
+    // "scroll up" = show content above = finger swipes DOWN (top to bottom)
     let (x1, y1, x2, y2) = match dir {
-        Direction::Up => (cx, cy + distance / 2, cx, (cy - distance / 2).max(0)),
-        Direction::Down => (cx, (cy - distance / 2).max(0), cx, cy + distance / 2),
-        Direction::Left => (cx + distance / 2, cy, (cx - distance / 2).max(0), cy),
-        Direction::Right => ((cx - distance / 2).max(0), cy, cx + distance / 2, cy),
+        Direction::Down => (cx, cy + distance / 2, cx, (cy - distance / 2).max(0)),
+        Direction::Up => (cx, (cy - distance / 2).max(0), cx, cy + distance / 2),
+        Direction::Right => (cx + distance / 2, cy, (cx - distance / 2).max(0), cy),
+        Direction::Left => ((cx - distance / 2).max(0), cy, cx + distance / 2, cy),
     };
 
     execute_device_action(
@@ -1982,21 +2034,40 @@ async fn is_action(
 
     let result = match state.to_lowercase().as_str() {
         "visible" => true, // If element exists and was found, it's visible
-        "enabled" => !element
-            .properties
-            .get("isDisabled")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false),
-        "checked" => element
-            .properties
-            .get("isChecked")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false),
-        "focused" => element
-            .properties
-            .get("isFocused")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false),
+        "enabled" => {
+            // Android uiautomator sets isDisabled directly
+            if element.properties.get("isDisabled").and_then(|v| v.as_bool()).unwrap_or(false) {
+                false
+            }
+            // Flutter uses hasEnabledState + isEnabled combo:
+            // hasEnabledState=true, isEnabled=true → enabled
+            // hasEnabledState=true, isEnabled absent → disabled
+            else if element.properties.get("hasEnabledState").and_then(|v| v.as_bool()).unwrap_or(false) {
+                element.properties.get("isEnabled").and_then(|v| v.as_bool()).unwrap_or(false)
+            }
+            // No enable state info → default enabled
+            else {
+                true
+            }
+        }
+        "checked" => {
+            // Flutter checkbox: isChecked flag
+            if let Some(v) = element.properties.get("isChecked").and_then(|v| v.as_bool()) {
+                v
+            }
+            // Flutter switch: isToggled flag
+            else if let Some(v) = element.properties.get("isToggled").and_then(|v| v.as_bool()) {
+                v
+            }
+            // Default: not checked
+            else {
+                false
+            }
+        }
+        "focused" => {
+            element.properties.get("isFocused").and_then(|v| v.as_bool()).unwrap_or(false)
+                || element.properties.get("focused").and_then(|v| v.as_bool()).unwrap_or(false)
+        }
         _ => {
             output.error(&format!(
                 "Unknown state: {}. Valid states: visible, enabled, checked, focused",

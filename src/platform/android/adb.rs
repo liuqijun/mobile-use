@@ -358,6 +358,23 @@ impl DeviceOperator for AdbClient {
         AdbClient::keyevent(self, key).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 
+    fn clear_text_field(&self) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // Use raw shell to send Ctrl+A (select all) bypassing keyevent validation
+        // KEYCODE_A=29, META_CTRL_ON flag is handled by combining with --longpress workaround
+        // Most reliable: use 'input keyevent' with numeric code for MOVE_END, then select all via SHIFT+HOME
+        self.shell("input keyevent KEYCODE_MOVE_END").map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        // Select all using KEYCODE_MOVE_HOME with SHIFT meta (select from end to beginning)
+        // ADB supports: input keyevent --shift KEYCODE_MOVE_HOME (not all versions)
+        // Fallback: use 'am broadcast' or numeric combo
+        // Most compatible: triple-tap to select word, then extend selection
+        // Actually use: Ctrl+A via shell input combination
+        self.shell("input keycombination 113 29").map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        self.shell("input keyevent KEYCODE_DEL").map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        Ok(())
+    }
+
     fn screenshot(&self, local_path: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
         AdbClient::screenshot(self, local_path).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }

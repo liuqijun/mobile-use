@@ -79,6 +79,7 @@ pub enum DeviceAction {
     Swipe { x1: i32, y1: i32, x2: i32, y2: i32, duration_ms: u32 },
     InputText { text: String },
     Keyevent { key: String },
+    ClearTextField,
     Screenshot { path: String },
     GetScreenSize,
 }

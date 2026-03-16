@@ -260,6 +260,8 @@ pub trait DeviceOperator: Send + Sync {
     fn input_text(&self, text: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
     /// Send key event
     fn keyevent(&self, key: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    /// Clear text field content (select all + delete)
+    fn clear_text_field(&self) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
     /// Take screenshot and save to local path
     fn screenshot(&self, local_path: &str) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
     /// Get screen size in physical pixels (width, height)

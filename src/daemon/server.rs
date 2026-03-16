@@ -472,6 +472,9 @@ async fn handle_request(
                             DeviceAction::Keyevent { ref key } => {
                                 sess.device_op.keyevent(key)
                             }
+                            DeviceAction::ClearTextField => {
+                                sess.device_op.clear_text_field()
+                            }
                             DeviceAction::Screenshot { ref path } => {
                                 sess.device_op.screenshot(path)
                             }

@@ -278,6 +278,24 @@ impl DeviceOperator for WdaClient {
         Ok(())
     }
 
+    fn clear_text_field(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // iOS: use WDA select-all via Cmd+A equivalent, then delete
+        // Send Home key to go to beginning, then Shift+End to select all, then delete
+        // Or simply: send enough delete keys after moving to end
+        self.keyevent("MOVE_END")?;
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        // Select all: send 100 shift+delete equivalent (backspace chars)
+        let deletes: Vec<String> = (0..100).map(|_| "\u{8}".to_string()).collect();
+        let url = format!("{}/wda/keys", self.session_url()?);
+        let body = serde_json::json!({ "value": deletes });
+        let resp = self.client.post(&url).json(&body).send()?;
+        if !resp.status().is_success() {
+            let err = resp.text().unwrap_or_default();
+            return Err(format!("WDA clear failed: {}", err).into());
+        }
+        Ok(())
+    }
+
     fn screenshot(
         &self,
         local_path: &str,
