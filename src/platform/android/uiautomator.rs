@@ -291,6 +291,7 @@ fn convert_to_element_tree(
     let checkable = raw.attrs.get("checkable").map(|v| v == "true").unwrap_or(false);
     let checked = raw.attrs.get("checked").map(|v| v == "true").unwrap_or(false);
     let enabled = raw.attrs.get("enabled").map(|v| v == "true").unwrap_or(true);
+    let focused = raw.attrs.get("focused").map(|v| v == "true").unwrap_or(false);
     let selected = raw.attrs.get("selected").map(|v| v == "true").unwrap_or(false);
     let long_clickable = raw.attrs.get("long-clickable").map(|v| v == "true").unwrap_or(false);
 
@@ -330,6 +331,9 @@ fn convert_to_element_tree(
     }
     if !enabled {
         properties.insert("isDisabled".to_string(), serde_json::Value::Bool(true));
+    }
+    if focused {
+        properties.insert("focused".to_string(), serde_json::Value::Bool(true));
     }
     if selected {
         properties.insert("isSelected".to_string(), serde_json::Value::Bool(true));
@@ -564,6 +568,47 @@ mod tests {
         let frame = &tree.children[0];
         assert_eq!(frame.children.len(), 1); // Only the button
         assert_eq!(frame.children[0].element_type, "Button");
+    }
+
+    #[test]
+    fn test_parse_uiautomator_xml_states() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<hierarchy rotation="0">
+  <node index="0" text="" class="android.widget.FrameLayout" package="com.example" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,1920]">
+    <node index="0" text="Username" class="android.widget.EditText" package="com.example" content-desc="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="true" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[50,100][500,150]" />
+    <node index="1" text="Submit" class="android.widget.Button" package="com.example" content-desc="" checkable="false" checked="false" clickable="true" enabled="false" focusable="true" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[50,200][500,250]" />
+    <node index="2" text="Agree" class="android.widget.CheckBox" package="com.example" content-desc="" checkable="true" checked="true" clickable="true" enabled="true" focusable="true" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[50,300][500,350]" />
+  </node>
+</hierarchy>"#;
+
+        let mut ref_map = RefMap::new();
+        let tree = parse_uiautomator_xml(xml, &mut ref_map, false).unwrap();
+        let frame = &tree.children[0];
+
+        // EditText: focused=true
+        let edit = &frame.children[0];
+        assert_eq!(edit.element_type, "TextField");
+        assert_eq!(
+            edit.properties.get("focused"),
+            Some(&serde_json::Value::Bool(true))
+        );
+
+        // Button: enabled=false
+        let btn = &frame.children[1];
+        assert_eq!(btn.element_type, "Button");
+        assert_eq!(
+            btn.properties.get("isDisabled"),
+            Some(&serde_json::Value::Bool(true))
+        );
+        assert!(btn.properties.get("focused").is_none()); // not focused
+
+        // CheckBox: checked=true
+        let cb = &frame.children[2];
+        assert_eq!(cb.element_type, "CheckBox");
+        assert_eq!(
+            cb.properties.get("isChecked"),
+            Some(&serde_json::Value::Bool(true))
+        );
     }
 
     #[test]
